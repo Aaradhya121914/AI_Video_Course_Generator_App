@@ -1,10 +1,11 @@
 import React from "react";
-import { UserButton } from "@clerk/nextjs";
+import Addcourse from "./_components/Addcourse";
+
 
 const Dashboard = () => {
   return (
     <div>
-      <UserButton />
+      <Addcourse/>
     </div>
   );
 };
