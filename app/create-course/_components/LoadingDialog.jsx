@@ -20,14 +20,11 @@ const LoadingDialog = ({ loading }) => {
   <AlertDialogContent>
     <AlertDialogHeader>
       <AlertDialogTitle className="sr-only">Loading Course</AlertDialogTitle>
-      <AlertDialogDescription>
-       <div className='flex flex-col items-center justify-center p-10'>
-        <Image src={"/loading.gif"} alt="Loading..." width={100} height={100} />
-        <div className="text-center font-bold mt-4 text-lg">Please Wait...AI Working on your Course</div>
-       </div>
-      </AlertDialogDescription>
     </AlertDialogHeader>
-    
+    <div className='flex flex-col items-center justify-center p-10'>
+      <Image src={"/loading.gif"} alt="Loading..." width={100} height={100} />
+      <div className="text-center font-bold mt-4 text-lg">Please Wait...AI Working on your Course</div>
+    </div>
   </AlertDialogContent>
 </AlertDialog>
   )

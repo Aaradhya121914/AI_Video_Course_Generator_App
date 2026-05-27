@@ -86,4 +86,4 @@ const SelectOption = () => {
   );
 };
 
-export default SelectOption;
+export default SelectOption

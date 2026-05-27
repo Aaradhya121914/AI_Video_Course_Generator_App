@@ -1,8 +1,8 @@
 "use client"
-import React from 'react'
+import React, { useState } from 'react'
 import Header from "../dashboard/_components/Header"
 import { UserInputContext } from '../_context/UserInputContext'
-import {useState} from "react";
+
 
 const CreateCourseLayout = ({children}) => {
   const [userCourseInput, setUserCourseInput] =useState([])

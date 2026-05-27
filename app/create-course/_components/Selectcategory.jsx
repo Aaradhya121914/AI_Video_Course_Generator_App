@@ -32,4 +32,4 @@ const Selectcategory = () => {
   );
 };
 
-export default Selectcategory;
+export default Selectcategory
