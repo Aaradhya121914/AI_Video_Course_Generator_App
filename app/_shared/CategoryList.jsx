@@ -2,37 +2,37 @@ export const CategoryList = [
   {
     id: 1,
     name: "Programming",
-    icon: "/coding.png",
+    icon: "/coding.gif",
     prompt: ""
   },
   {
     id: 2,
     name: "Health",
-    icon: "/lotus.png",
+    icon: "/lotus.gif",
     prompt: ""
   },
   {
     id: 3,
     name: "Creative",
-    icon: "/problem_solving.png",
+    icon: "/creative.gif",
     prompt: ""
   },
   {
     id: 4,
     name: "Finance",
-    icon: "/finance.png",
+    icon: "/finance.gif",
     prompt: ""
   },
   {
     id: 5,
     name: "Language Learning",
-    icon: "/language.png",
+    icon: "/lang.gif",
     prompt: ""
   },
   {
     id: 6,
     name: "Personal Development",
-    icon: "/personal_development.png",
+    icon: "/personal.gif",
     prompt: ""
   }
 ];
