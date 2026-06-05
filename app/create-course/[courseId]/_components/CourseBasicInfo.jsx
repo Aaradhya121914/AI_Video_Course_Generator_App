@@ -9,11 +9,11 @@ const CourseBasicInfo = ({ course, refreshData }) => {
   const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
-    if (course?.courseOutput?.courseImageUrl) {
-      setSelectedFile(course.courseOutput.courseImageUrl);
-    } else if (course?.courseOutput?.course?.imageUrl) {
-      setSelectedFile(course.courseOutput.course.imageUrl);
-    }
+    // Prefer explicit courseImageUrl, then nested course.imageUrl
+    const candidate = course?.courseOutput?.courseImageUrl || course?.courseOutput?.course?.imageUrl || null;
+    // ignore empty strings and set null to use placeholder
+    if (candidate && candidate !== '') setSelectedFile(candidate);
+    else setSelectedFile(null);
   }, [course]);
 
   const onFileSelected = async (event) => {
@@ -67,11 +67,14 @@ const CourseBasicInfo = ({ course, refreshData }) => {
         </div>
         <div className="relative">
           <label htmlFor="upload-image" className='cursor-pointer block'>
+            {/* If image is an external URL, bypass Next image optimizer to avoid /_next/image 404 in some dev configs */}
             <Image
               src={selectedFile || '/Course_placeholder_Img.jpeg'}
               width={250}
               alt='Course_Img'
               height={250}
+              onError={() => setSelectedFile(null)}
+              unoptimized={selectedFile && String(selectedFile).startsWith('http')}
               className="w-full rounded-xl h-[250px] object-cover"
             />
           </label>

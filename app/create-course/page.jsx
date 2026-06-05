@@ -9,6 +9,7 @@ import TopicDescription from "./_components/TopicDescription";
 import SelectOption from "./_components/SelectOption";
 import { UserInputContext } from "../_context/UserInputContext";
 import {GenerateCourseLayout_AI} from "../../configs/AiModel";
+import { normalizeCourseOutput, parseModelTextToJson } from "../../lib/normalizeCourse";
 import LoadingDialog from "./_components/LoadingDialog";
 import { db } from "../../configs/db";
 import { CourseList } from "../../configs/Schema";
@@ -47,17 +48,25 @@ const CreateCourse = () => {
     const BASIC_PROMPT="Generate A Course tutorial on following detail with course field name,description,along with chapter name, about, duration:"
     const USER_INPUT_PROMPT=`Category: ${userCourseInput?.category}, Topic: ${userCourseInput?.topic}, Description: ${userCourseInput?.description},Difficulty: ${userCourseInput?.difficulty}, Duration: ${userCourseInput?.duration} ,Video Lectures: ${userCourseInput?.videoLectures}, Chapters: ${userCourseInput?.Chapters}`;
 
-    const FINAL_PROMPT=`${BASIC_PROMPT} \n ${USER_INPUT_PROMPT} \n`
+    const SCHEMA_INSTRUCTION = `Respond ONLY with valid JSON matching this schema:\n{\n  "course": {\n    "name": string,\n    "description": string,\n    "imageUrl": string (optional),\n    "total_duration": string (optional),\n    "video_lectures": boolean (optional),\n    "chapters": [ { "name": string, "about": string, "duration": string } ]\n  }\n}`;
+
+    const FINAL_PROMPT=`${BASIC_PROMPT} \n ${USER_INPUT_PROMPT} \n ${SCHEMA_INSTRUCTION}`
     
     console.log("Final Prompt: ", FINAL_PROMPT);
 
-    const result= await GenerateCourseLayout_AI.sendMessage(FINAL_PROMPT);
+    const result = await GenerateCourseLayout_AI.sendMessage(FINAL_PROMPT);
 
-    console.log("Generated Course Layout: ", result.response?.text());
-    console.log(JSON.parse(result.response?.text()));
+    const text = typeof result.response?.text === 'function' ? result.response.text() : result.response?.text || '';
+    console.log("Generated Course Layout (raw): ", text);
+
+    // Parse model text into JSON if possible, then normalize to a stable schema
+    const parsed = parseModelTextToJson(text);
+    const normalized = normalizeCourseOutput(parsed);
+
+    console.log('Normalized Course Layout: ', normalized);
 
     setLoading(false);
-    SaveCourseLayoutInDB(JSON.parse(result.response?.text()));
+    SaveCourseLayoutInDB(normalized);
 
   }
 

@@ -9,11 +9,13 @@ import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Progress } from "@/components/ui/progress"
 import { Button } from "@/components/ui/button"
-import { useClerk } from '@clerk/nextjs';
+
+
+
+import { signOut } from '@clerk/nextjs';
 
 const SideBar = () => {
   const router = useRouter();
-  const { signOut } = useClerk();
   const Menu = [
     {
       id: 1,
