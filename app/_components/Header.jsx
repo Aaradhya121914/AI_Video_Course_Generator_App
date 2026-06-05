@@ -1,5 +1,6 @@
 import React from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
 const Header = () => {
@@ -11,7 +12,9 @@ const Header = () => {
         height={60}
         alt="Coursify Logo"
       />
-      <Button>Login</Button>
+      <Button asChild>
+        <Link href="/sign-in">Login</Link>
+      </Button>
     </div>
   );
 };

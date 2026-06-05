@@ -1,6 +1,7 @@
 import React from 'react'
 
-const ChapterList = ({ course }) => {
+
+const ChapterList = ({ course, refreshData }) => {
   const chapters = course?.courseOutput?.course?.chapters || course?.courseOutput?.chapters || []
 
   return (

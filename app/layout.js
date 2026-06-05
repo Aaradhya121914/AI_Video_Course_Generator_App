@@ -1,6 +1,7 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { ClerkProvider, GoogleOneTap} from '@clerk/nextjs'
+import { ClerkProvider } from '@clerk/nextjs';
+import GoogleOneTapClient from './_components/GoogleOneTapClient';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -26,7 +27,7 @@ export default function RootLayout({ children }) {
       style={{ colorScheme: 'light' }}
     >
       <body className="min-h-full flex flex-col">
-        <GoogleOneTap/>
+        <GoogleOneTapClient />
         {children}
       </body>
     </html>

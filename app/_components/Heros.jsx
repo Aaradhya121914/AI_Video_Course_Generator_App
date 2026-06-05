@@ -1,8 +1,19 @@
+"use client"
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
-import React from 'react'
+import React, { useCallback } from 'react'
+import { useUser } from '@clerk/nextjs'
+import { useRouter } from 'next/navigation'
 
 export default function HeroSection() {
+  const { isLoaded, isSignedIn } = useUser();
+  const router = useRouter();
+
+  const handleGetStarted = useCallback(() => {
+    if (!isLoaded) return;
+    if (isSignedIn) router.push('/dashboard');
+    else router.push('/sign-in');
+  }, [isLoaded, isSignedIn, router]);
   return (
     <section className="bg-white lg:grid lg:place-content-center">
       <div className="mx-auto w-screen max-w-7xl px-4 py-16 sm:px-6 sm:py-24 md:grid md:grid-cols-2 md:items-center md:gap-8 lg:px-8 lg:py-32">
@@ -22,7 +33,8 @@ export default function HeroSection() {
 
           <div className="mt-4 flex gap-4 sm:mt-6">
             <Button
-              className="inline-block rounded border border-indigo-600 bg-indigo-600 px-5 py-3 font-medium text-white shadow-sm transition-colors hover:bg-indigo-700 justify-center items-center"
+              onClick={handleGetStarted}
+              className="inline-block rounded border border-indigo-600 bg-indigo-600 px-5 py-3 font-medium text-white shadow-sm transition-colors hover:bg-indigo-700 justify-center items-center cursor-pointer"
             >
               Get Started
             </Button>
