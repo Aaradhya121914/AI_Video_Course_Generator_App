@@ -3,8 +3,17 @@ import { IoBarChartOutline } from "react-icons/io5";
 import { GoClock } from "react-icons/go";
 import { LiaChalkboardTeacherSolid } from "react-icons/lia";
 import { MdOndemandVideo } from "react-icons/md";
+import { Button } from '@/components/ui/button';
 
-const CourseDetail = ({ course }) => {
+const CourseDetail = ({ course, onGenerateContent }) => {
+  const hasVideo = (() => {
+    const outputCourse = course?.courseOutput?.course;
+    if (typeof outputCourse?.video_lectures === 'boolean') {
+      return outputCourse.video_lectures;
+    }
+    return String(course?.includeVideo || outputCourse?.video_lectures || '').toLowerCase() === 'yes';
+  })();
+
   return (
     <div className="border p-6 rounded-xl shadow-sm mt-3">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
@@ -37,19 +46,21 @@ const CourseDetail = ({ course }) => {
           <MdOndemandVideo className='text-4xl text-primary'/>
           <div>
             <h2 className='text-xs text-gray-500'>Video Included ?</h2>
-            <h2 className='font-medium text-lg'>
-              {(() => {
-                const hasVideo =
-                  typeof course?.courseOutput?.course?.video_lectures === 'boolean'
-                    ? course.courseOutput.course.video_lectures
-                    : course?.includeVideo?.toString().toLowerCase() === 'yes';
-                return hasVideo ? 'Yes' : 'No';
-              })()}
-            </h2>
+            <h2 className='font-medium text-lg'>{hasVideo ? 'Yes' : 'No'}</h2>
           </div>
         </div>
 
 
+      </div>
+
+      <div className='mt-4 flex justify-end'>
+        <Button
+          disabled={!hasVideo}
+          onClick={onGenerateContent}
+          className='hover:bg-purple-800 cursor-pointer'
+        >
+          Generate Course Content
+        </Button>
       </div>
     </div>
   )
