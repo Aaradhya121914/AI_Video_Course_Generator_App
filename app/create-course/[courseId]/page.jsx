@@ -1,5 +1,5 @@
 "use client"
-import React, { useEffect, useState } from 'react'
+import React, { use, useEffect, useState } from 'react'
 import { db } from '../../../configs/db'
 import { CourseList } from '../../../configs/Schema'
 import { useUser } from '@clerk/nextjs'
@@ -10,8 +10,7 @@ import ChapterList from './_components/ChapterList';
 import service from '../../../configs/Service';
 
 const CourseLayout = ({ params }) => {
-  const resolvedParams = React.use(params);
-  const courseId = resolvedParams?.courseId;
+  const { courseId } = use(params);
   const { user } = useUser();
   const [course, setCourse] = useState(null);
 
