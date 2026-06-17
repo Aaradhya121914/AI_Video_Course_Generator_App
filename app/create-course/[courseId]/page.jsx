@@ -8,6 +8,8 @@ import CourseBasicInfo from './_components/CourseBasicInfo';
 import CourseDetail from './_components/CourseDetail';
 import ChapterList from './_components/ChapterList';
 import service from '../../../configs/Service';
+import { createGeminiChat } from '../../../configs/AiModel';
+import { parseModelTextToJson } from '../../../lib/normalizeCourse';
 
 const CourseLayout = ({ params }) => {
   const { courseId } = use(params);
@@ -44,53 +46,77 @@ const CourseLayout = ({ params }) => {
   };
 
   const handleGenerateCourseContent = async () => {
-    if (!course || !hasVideoIncluded(course)) {
-      return;
-    }
-
-    if (chapterVideoCache[course.courseId]) {
-      console.log('Using cached chapter video data:', chapterVideoCache[course.courseId]);
+    if (!course) {
       return;
     }
 
     const chapters = course?.courseOutput?.course?.chapters || course?.courseOutput?.chapters || [];
     if (chapters.length === 0) {
-      console.warn('No chapters found to generate video URLs for.');
+      console.warn('No chapters found to generate content for.');
+      return;
+    }
+
+    if (hasVideoIncluded(course)) {
+      if (chapterVideoCache[course.courseId]) {
+        console.log('Using cached chapter video data:', chapterVideoCache[course.courseId]);
+        return;
+      }
+
+      try {
+        const chapterTitles = chapters.map((chapter) => chapter?.name || chapter?.chapter_name || 'Chapter');
+        const videos = await service.getVideosForChapters(chapterTitles);
+
+        const chapterVideos = chapterTitles.map((chapterName, index) => {
+          const video = videos?.[index] || {};
+          return {
+            chapter: chapterName,
+            searchQuery: video.searchQuery || chapterName,
+            videoId: video.videoId || null,
+            videoUrl: video.videoUrl || null,
+            videoTitle: video.title || null,
+            videoDuration: video.duration || null,
+            channelName: video.channelName || null,
+            channelId: video.channelId || null,
+            publishedAt: video.publishedAt || null,
+            description: video.description || null,
+            thumbnails: video.thumbnails || null,
+            viewCount: video.viewCount || null,
+            likeCount: video.likeCount || null,
+            commentCount: video.commentCount || null,
+          };
+        });
+
+        setChapterVideoCache((prev) => ({
+          ...prev,
+          [course.courseId]: chapterVideos,
+        }));
+
+        console.log('Generated Chapter Video Data:', chapterVideos);
+      } catch (error) {
+        console.error('Failed to generate chapter video URLs:', error);
+      }
+
       return;
     }
 
     try {
-      const chapterTitles = chapters.map((chapter) => chapter?.name || chapter?.chapter_name || 'Chapter');
-      const videos = await service.getVideosForChapters(chapterTitles);
-
-      const chapterVideos = chapterTitles.map((chapterName, index) => {
-        const video = videos?.[index] || {};
-        return {
-          chapter: chapterName,
-          searchQuery: video.searchQuery || chapterName,
-          videoId: video.videoId || null,
-          videoUrl: video.videoUrl || null,
-          videoTitle: video.title || null,
-          videoDuration: video.duration || null,
-          channelName: video.channelName || null,
-          channelId: video.channelId || null,
-          publishedAt: video.publishedAt || null,
-          description: video.description || null,
-          thumbnails: video.thumbnails || null,
-          viewCount: video.viewCount || null,
-          likeCount: video.likeCount || null,
-          commentCount: video.commentCount || null,
-        };
-      });
-
-      setChapterVideoCache((prev) => ({
-        ...prev,
-        [course.courseId]: chapterVideos,
+      const chapterInput = chapters.map((chapter) => ({
+        chapterName: chapter?.name || chapter?.chapter_name || 'Chapter',
+        chapterDescription: chapter?.about || chapter?.chapter_about || 'No chapter description available.',
       }));
 
-      console.log('Generated Chapter Video Data:', chapterVideos);
+      const prompt = `Generate a detailed blog-style theory write-up for each chapter below. Respond ONLY with valid JSON in this shape:\n[\n  {\n    \"chapterName\": string,\n    \"chapterDescription\": string,\n    \"theory\": string,\n    \"searchQuery\": string\n  }\n]\n\nChapters:\n${chapterInput
+        .map((chapter, index) => `${index + 1}. ${chapter.chapterName} - ${chapter.chapterDescription}`)
+        .join('\n')}`;
+
+      const chat = createGeminiChat();
+      const result = await chat.sendMessage(prompt);
+      const text = typeof result.response?.text === 'function' ? result.response.text() : result.response?.text || '';
+      const parsed = parseModelTextToJson(text);
+
+      console.log('Generated Theory Content JSON:', parsed);
     } catch (error) {
-      console.error('Failed to generate chapter video URLs:', error);
+      console.error('Failed to generate theory content:', error);
     }
   };
 

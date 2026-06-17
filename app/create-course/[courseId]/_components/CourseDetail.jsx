@@ -55,7 +55,7 @@ const CourseDetail = ({ course, onGenerateContent }) => {
 
       <div className='mt-4 flex justify-end'>
         <Button
-          disabled={!hasVideo}
+          disabled={!course}
           onClick={onGenerateContent}
           className='hover:bg-purple-800 cursor-pointer'
         >

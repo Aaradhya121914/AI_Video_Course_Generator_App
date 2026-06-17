@@ -13,6 +13,8 @@ const generationConfig = {
   responseMimeType:"application/json",
 };
 
+export const createGeminiChat = () => model.startChat({ generationConfig });
+
 export const GenerateCourseLayout_AI =model.startChat({
   generationConfig,
   history:[

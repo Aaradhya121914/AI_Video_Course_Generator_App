@@ -12,7 +12,8 @@ const callYoutubeSearch = async (query) => {
     type: 'video',
     maxResults: 1,
     videoDuration: 'long',
-    fields: 'items(id/videoId,snippet(title,channelTitle,channelId,publishedAt,description,thumbnails))',
+    safeSearch: 'none',
+    fields: 'items(id,id/videoId,id/kind,snippet(title,channelTitle,channelId,publishedAt,description,thumbnails))',
     key: process.env.NEXT_PUBLIC_YOUTUBE_API_KEY,
   };
 
@@ -23,8 +24,9 @@ const callYoutubeSearch = async (query) => {
     return null;
   }
 
+  const videoId = typeof item.id === 'string' ? item.id : item.id?.videoId || null;
   return {
-    videoId: item.id?.videoId || null,
+    videoId,
     snippet: item.snippet || null,
   };
 };
@@ -57,6 +59,7 @@ const buildVideoResult = (chapter, query, searchResult, detailsItem) => {
     publishedAt: snippet?.publishedAt || null,
     thumbnails: snippet?.thumbnails || null,
     duration: detailsItem?.contentDetails?.duration || null,
+    videoDuration: detailsItem?.contentDetails?.duration || null,
     cached: Boolean(searchCache.has(`search:${query}`) && detailsCache.has(`details:${videoId}`)),
   };
 };
