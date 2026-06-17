@@ -13,6 +13,7 @@ const CourseLayout = ({ params }) => {
   const { courseId } = use(params);
   const { user } = useUser();
   const [course, setCourse] = useState(null);
+  const [chapterVideoCache, setChapterVideoCache] = useState({});
 
   useEffect(() => {
     if (courseId && user?.primaryEmailAddress?.emailAddress) {
@@ -47,6 +48,11 @@ const CourseLayout = ({ params }) => {
       return;
     }
 
+    if (chapterVideoCache[course.courseId]) {
+      console.log('Using cached chapter video data:', chapterVideoCache[course.courseId]);
+      return;
+    }
+
     const chapters = course?.courseOutput?.course?.chapters || course?.courseOutput?.chapters || [];
     if (chapters.length === 0) {
       console.warn('No chapters found to generate video URLs for.');
@@ -54,22 +60,35 @@ const CourseLayout = ({ params }) => {
     }
 
     try {
-      const chapterVideos = await Promise.all(chapters.map(async (chapter) => {
-        const chapterName = chapter?.name || chapter?.chapter_name || 'Chapter';
-        const searchQuery = `${course?.courseOutput?.course?.name || course?.courseOutput?.course_name || course?.category} ${chapterName}`;
-        const videos = await service.getVideos(searchQuery);
-        const firstVideo = videos?.[0];
-        const videoUrl = firstVideo?.id?.videoId ? `https://www.youtube.com/watch?v=${firstVideo.id.videoId}` : null;
+      const chapterTitles = chapters.map((chapter) => chapter?.name || chapter?.chapter_name || 'Chapter');
+      const videos = await service.getVideosForChapters(chapterTitles);
 
+      const chapterVideos = chapterTitles.map((chapterName, index) => {
+        const video = videos?.[index] || {};
         return {
           chapter: chapterName,
-          videoUrl,
-          title: firstVideo?.snippet?.title || null,
-          searchQuery,
+          searchQuery: video.searchQuery || chapterName,
+          videoId: video.videoId || null,
+          videoUrl: video.videoUrl || null,
+          videoTitle: video.title || null,
+          videoDuration: video.duration || null,
+          channelName: video.channelName || null,
+          channelId: video.channelId || null,
+          publishedAt: video.publishedAt || null,
+          description: video.description || null,
+          thumbnails: video.thumbnails || null,
+          viewCount: video.viewCount || null,
+          likeCount: video.likeCount || null,
+          commentCount: video.commentCount || null,
         };
+      });
+
+      setChapterVideoCache((prev) => ({
+        ...prev,
+        [course.courseId]: chapterVideos,
       }));
 
-      console.log(JSON.stringify({ courseId: course.courseId, videos: chapterVideos }, null, 2));
+      console.log('Generated Chapter Video Data:', chapterVideos);
     } catch (error) {
       console.error('Failed to generate chapter video URLs:', error);
     }

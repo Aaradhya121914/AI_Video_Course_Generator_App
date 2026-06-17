@@ -13,3 +13,14 @@ export const CourseList=pgTable("courseList",{
     userName:varchar("userName"),
     userProfileImage:varchar("userProfileImage"),
 })
+
+export const chapters=pgTable("chapters",{
+    id:serial("id").primaryKey(),
+    courseId:varchar("courseId").notNull(),
+    chapterId:integer("chapterId").notNull(),
+    chapterName:varchar("chapterName").notNull(),
+    chapterDescription:varchar("chapterDescription"),
+    videoId:varchar("videoId"),
+    videoUrl:varchar("videoUrl"),
+    createdBy:varchar("createdBy").notNull(),
+})

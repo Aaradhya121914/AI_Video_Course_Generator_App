@@ -10,7 +10,7 @@ const ChapterList = ({ course, refreshData }) => {
        <div className="space-y-4">
           {chapters.map((chapter,index)=>(
             <div key={index} className='border p-4 rounded-lg shadow-sm'>
-                <div className='flex items-center justify-between gap-4'>
+                <div className='flex flex-col gap-4 md:flex-row md:items-center md:justify-between'>
                     <div className='flex items-start gap-3'>
                         <h2 className="bg-primary h-10 w-10 rounded-full font-bold text-white flex items-center justify-center">{index + 1}</h2>
                         <div>
@@ -18,7 +18,7 @@ const ChapterList = ({ course, refreshData }) => {
                             <p className='text-sm text-gray-500'>{chapter?.about || chapter?.chapter_about}</p>
                         </div>
                     </div>
-                    <p className='text-sm text-primary whitespace-nowrap'>{chapter?.duration || chapter?.chapter_duration}</p>
+                    <p className='text-sm text-primary whitespace-nowrap md:mt-0'>{chapter?.duration || chapter?.chapter_duration}</p>
                 </div>
             </div>
           ))}

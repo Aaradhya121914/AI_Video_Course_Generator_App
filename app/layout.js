@@ -20,18 +20,17 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <ClerkProvider>
-      <html
+    <html
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased light`}
       style={{ colorScheme: 'light' }}
     >
       <body className="min-h-full flex flex-col">
-        <GoogleOneTapClient />
-        {children}
+        <ClerkProvider>
+          <GoogleOneTapClient />
+          {children}
+        </ClerkProvider>
       </body>
     </html>
-    </ClerkProvider>
-    
   );
 }
