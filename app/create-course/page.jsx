@@ -35,7 +35,16 @@ const CreateCourse = () => {
     if(activeIndex===-1 && (userCourseInput?.category?.length===0||userCourseInput?.category===undefined )) return true;
     if(activeIndex===0 && (userCourseInput?.topic?.length==0 || userCourseInput?.topic===undefined)) return true;
     if(activeIndex===0 && (userCourseInput?.description?.length==0 || userCourseInput?.description===undefined)) return true;
-    if(activeIndex===1 && (userCourseInput?.difficulty==undefined || userCourseInput?.duration==undefined || userCourseInput?.videoLectures==undefined || userCourseInput?.Chapters==undefined)) return true;
+    if(
+      activeIndex===1 &&
+      (
+        userCourseInput?.difficulty==undefined ||
+        userCourseInput?.duration==undefined ||
+        userCourseInput?.videoLectures==undefined ||
+        userCourseInput?.Chapters==undefined ||
+        userCourseInput?.Chapters === ""
+      )
+    ) return true;
     return false
   }
 

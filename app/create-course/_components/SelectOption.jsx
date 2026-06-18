@@ -23,7 +23,7 @@ const SelectOption = () => {
 
   return (
     <div className="px-10 md:px-20 lg:px-44">
-      <div className="grid grid-cols-2 gap-10">
+      <div className="grid grid-cols-1 gap-10 lg:grid-cols-2 lg:grid-rows-2">
         <div>
           <label htmlFor="" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
             Difficulty Level
@@ -79,7 +79,14 @@ const SelectOption = () => {
 
         <div>
           <label htmlFor="" className="text-sm">No of Chapters</label>
-          <Input type="number" defaultValue={userCourseInput?.Chapters} onChange={(e) => handleInputChange("Chapters", parseInt(e.target.value))}/>
+          <Input
+            type="number"
+            value={Number.isFinite(userCourseInput?.Chapters) ? userCourseInput.Chapters : ""}
+            onChange={(e) => {
+              const value = e.target.value;
+              handleInputChange("Chapters", value === "" ? "" : Number(value));
+            }}
+          />
         </div>
       </div>
     </div>

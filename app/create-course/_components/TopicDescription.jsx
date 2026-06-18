@@ -16,13 +16,15 @@ const TopicDescription = () => {
     <div className="mx-20 lg:mx-44">
       {/* Input Topic  */}
       <div className="mt-5">
-        <label>Write topic for which you want to generate video course :</label>
+        <label className="lg:hidden">Topic for the course:</label>
+        <label className="hidden lg:block">Write topic for which you want to generate video course :</label>
         <Input placeholder={"Topic"} defaultValue={userCourseInput?.topic} onChange={(e) => handleInputChange("topic", e.target.value)} />   
       </div>
       
       {/* Description textarea  */}
       <div className="mt-5">
-        <label>Tell us more about your course, what you want (Optional):</label>
+        <label className="lg:hidden">Course description:</label>
+        <label className="hidden lg:block">Tell us more about your course, what you want:</label>
         <Textarea placeholder={"About your Course"} defaultValue={userCourseInput?.description} onChange={(e) => handleInputChange("description", e.target.value)}/>
       </div>
     </div>

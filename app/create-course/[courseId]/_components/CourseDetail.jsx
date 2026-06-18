@@ -3,8 +3,9 @@ import { IoBarChartOutline } from "react-icons/io5";
 import { GoClock } from "react-icons/go";
 import { LiaChalkboardTeacherSolid } from "react-icons/lia";
 import { MdOndemandVideo } from "react-icons/md";
+import { Button } from '@/components/ui/button';
 
-const CourseDetail = ({ course }) => {
+const CourseDetail = ({ course, onGenerateContent }) => {
   return (
     <div className="border p-6 rounded-xl shadow-sm mt-3">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
@@ -49,7 +50,12 @@ const CourseDetail = ({ course }) => {
           </div>
         </div>
 
+      </div>
 
+      <div className="mt-6 flex justify-end">
+        <Button onClick={onGenerateContent} className="bg-primary text-white cursor-pointer hover:bg-purple-800 hover:text-white">
+          Generate Course Content
+        </Button>
       </div>
     </div>
   )
