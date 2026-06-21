@@ -24,6 +24,7 @@ export default function RootLayout({ children }) {
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased light`}
       style={{ colorScheme: 'light' }}
+      suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col">
         <ClerkProvider>

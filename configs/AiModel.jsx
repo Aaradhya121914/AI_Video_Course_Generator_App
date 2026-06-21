@@ -36,3 +36,12 @@ export const GenerateCourseLayout_AI =model.startChat({
   
 });
 
+export const GenerateChapterContent_AI = async (prompt) => {
+  const chat = model.startChat({
+    generationConfig,
+    history: [],
+  });
+
+  return chat.sendMessage(prompt);
+};
+

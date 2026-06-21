@@ -5,7 +5,7 @@ import { LiaChalkboardTeacherSolid } from "react-icons/lia";
 import { MdOndemandVideo } from "react-icons/md";
 import { Button } from '@/components/ui/button';
 
-const CourseDetail = ({ course, onGenerateContent }) => {
+const CourseDetail = ({ course, onGenerateContent, onRetryFailed, isGenerating, hasFailedChapters }) => {
   return (
     <div className="border p-6 rounded-xl shadow-sm mt-3">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
@@ -52,9 +52,14 @@ const CourseDetail = ({ course, onGenerateContent }) => {
 
       </div>
 
-      <div className="mt-6 flex justify-end">
-        <Button onClick={onGenerateContent} className="bg-primary text-white cursor-pointer hover:bg-purple-800 hover:text-white">
-          Generate Course Content
+      <div className="mt-6 flex gap-4 justify-end">
+        {hasFailedChapters && (
+          <Button onClick={onRetryFailed} disabled={isGenerating} variant={'outline'}>
+            Retry Failed Chapters
+          </Button>
+        )}
+        <Button onClick={onGenerateContent} disabled={isGenerating} className="bg-primary text-white cursor-pointer hover:bg-purple-800 hover:text-white">
+          {isGenerating ? 'Generating...' : 'Generate Course Content'}
         </Button>
       </div>
     </div>
