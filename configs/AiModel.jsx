@@ -13,8 +13,6 @@ const generationConfig = {
   responseMimeType:"application/json",
 };
 
-export const createGeminiChat = () => model.startChat({ generationConfig });
-
 export const GenerateCourseLayout_AI =model.startChat({
   generationConfig,
   history:[
@@ -37,4 +35,13 @@ export const GenerateCourseLayout_AI =model.startChat({
   ],
   
 });
+
+export const GenerateChapterContent_AI = async (prompt) => {
+  const chat = model.startChat({
+    generationConfig,
+    history: [],
+  });
+
+  return chat.sendMessage(prompt);
+};
 

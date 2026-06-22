@@ -11,7 +11,6 @@ import { UserInputContext } from "../_context/UserInputContext";
 import {GenerateCourseLayout_AI} from "../../configs/AiModel";
 import { normalizeCourseOutput, parseModelTextToJson } from "../../lib/normalizeCourse";
 import LoadingDialog from "./_components/LoadingDialog";
-import service from "../../configs/Service";
 import { db } from "../../configs/db";
 import { CourseList } from "../../configs/Schema";
 import { v4 as uuidv4 } from "uuid";
@@ -36,7 +35,16 @@ const CreateCourse = () => {
     if(activeIndex===-1 && (userCourseInput?.category?.length===0||userCourseInput?.category===undefined )) return true;
     if(activeIndex===0 && (userCourseInput?.topic?.length==0 || userCourseInput?.topic===undefined)) return true;
     if(activeIndex===0 && (userCourseInput?.description?.length==0 || userCourseInput?.description===undefined)) return true;
-    if(activeIndex===1 && (userCourseInput?.difficulty==undefined || userCourseInput?.duration==undefined || userCourseInput?.videoLectures==undefined || userCourseInput?.Chapters==undefined)) return true;
+    if(
+      activeIndex===1 &&
+      (
+        userCourseInput?.difficulty==undefined ||
+        userCourseInput?.duration==undefined ||
+        userCourseInput?.videoLectures==undefined ||
+        userCourseInput?.Chapters==undefined ||
+        userCourseInput?.Chapters === ""
+      )
+    ) return true;
     return false
   }
 
@@ -65,14 +73,6 @@ const CreateCourse = () => {
     const normalized = normalizeCourseOutput(parsed);
 
     console.log('Normalized Course Layout: ', normalized);
-
-    //Generating Video URL
-    service.getVideos(userCourseInput?.topic).then((videos)=>{
-      console.log("Fetched Videos from YouTube API: ", videos);
-      // We can further process these videos to match them with chapters or something, but for now we will just log them
-    }).catch((err)=>{
-      console.error("Error fetching videos from YouTube API: ", err);
-    });
 
     setLoading(false);
     SaveCourseLayoutInDB(normalized);

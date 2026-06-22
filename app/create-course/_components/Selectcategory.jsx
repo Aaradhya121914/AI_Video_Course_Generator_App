@@ -16,7 +16,7 @@ const Selectcategory = () => {
   return (
     <div>
       <h2 className="text-bold text-primary my-5">Select a Course Category:</h2>
-      <div className="grid grid-cols-2 grid-rows-3 gap-10 px-10 md:px-20 py-10 lg:grid-cols-3 lg:grid-rows-2">
+      <div className="grid grid-cols-2 grid-rows-3 gap-10 px-10 md:px-20 py-10 lg:grid-cols-3 lg:grid-rows-2 lg:px-44">
         {CategoryList.map((item, index) => (
           <div
             key={item.id}
