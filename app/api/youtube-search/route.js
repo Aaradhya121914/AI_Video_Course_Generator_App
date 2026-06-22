@@ -81,7 +81,7 @@ export async function POST(req) {
     if (!apiKey) {
       return Response.json(
         {
-          error: 'YOUTUBE_API_KEY environment variable not set',
+          error: 'NEXT_PUBLIC_YOUTUBE_API_KEY environment variable not set',
           videos: [],
         },
         { status: 500 }
