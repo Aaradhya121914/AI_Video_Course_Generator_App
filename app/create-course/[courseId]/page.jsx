@@ -1,7 +1,7 @@
 "use client"
 import React, { useEffect, useState } from 'react'
 import { db } from '../../../configs/db'
-import { CourseList } from '../../../configs/Schema'
+import { CourseList, Chapters } from '../../../configs/Schema'
 import { useUser } from '@clerk/nextjs'
 import { and, eq } from 'drizzle-orm';
 import CourseBasicInfo from './_components/CourseBasicInfo';
@@ -10,6 +10,7 @@ import ChapterList from './_components/ChapterList';
 import service from '../../../configs/Service';
 import { parseModelTextToJson } from '../../../lib/normalizeCourse';
 import { Progress } from '@/components/ui/progress';
+import { v4 as uuidv4 } from 'uuid';
 
 const CourseLayout = ({ params }) => {
   const resolvedParams = React.use(params);
@@ -98,6 +99,50 @@ const CourseLayout = ({ params }) => {
     return '';
   };
 
+  const saveChaptersToDB = async (courseIdParam, originalChapters, generatedChapters) => {
+    try {
+      // First delete any existing chapters for this course
+      await db.delete(Chapters).where(eq(Chapters.courseId, courseIdParam));
+
+      // Insert new chapters
+      const insertPromises = generatedChapters.map(async (chapter, index) => {
+        const originalChapter = originalChapters[index];
+        const chapterName = chapter.chapter || chapter.chapter_name || originalChapter?.name || originalChapter?.chapter_name || `Chapter ${index + 1}`;
+        const chapterAbout = chapter.chapter_about || originalChapter?.about || originalChapter?.chapter_about || '';
+        const chapterDuration = chapter.chapter_duration || originalChapter?.duration || originalChapter?.chapter_duration || '';
+        
+        const chapterId = uuidv4();
+        
+        await db.insert(Chapters).values({
+          courseId: courseIdParam,
+          chapterId,
+          chapterName,
+          chapterAbout,
+          chapterDuration,
+          chapterContent: chapter.chapter_content ? { content: chapter.chapter_content } : null,
+          searchQuery: chapter.searchQuery || null,
+          videoId: chapter.videoId || null,
+          videoUrl: chapter.videoUrl || null,
+          videoTitle: chapter.videoTitle || null,
+          videoDuration: chapter.videoDuration || null,
+          channelName: chapter.channelName || null,
+          channelId: chapter.channelId || null,
+          publishedAt: chapter.publishedAt || null,
+          description: chapter.description || null,
+          thumbnails: chapter.thumbnails || null,
+          viewCount: chapter.viewCount || null,
+          likeCount: chapter.likeCount || null,
+          commentCount: chapter.commentCount || null,
+        });
+      });
+
+      await Promise.all(insertPromises);
+      console.log('All chapters saved to database successfully!');
+    } catch (error) {
+      console.error('Error saving chapters to DB:', error);
+    }
+  };
+
   const generateChapterContentFromApi = async (prompt) => {
     const response = await fetch('/api/generate-chapter-content', {
       method: 'POST',
@@ -132,8 +177,8 @@ const CourseLayout = ({ params }) => {
     }
 
     if (!hasVideoIncluded(course)) {
-      if (chapterContentCache[course.courseId]) {
-        console.log('Using cached chapter content data:', chapterContentCache[course.courseId]);
+      if (chapterVideoCache[course.courseId]) {
+        console.log('Chapter Content (No Video, All Null):', chapterVideoCache[course.courseId]);
         return;
       }
 
@@ -224,11 +269,26 @@ Chapter duration: ${chapterDuration}`;
               });
             }
 
+            // Create same structure as video-included case!
             chapterContent.push({
+              chapter: chapterName,
+              searchQuery: chapterName,
+              videoId: null,
+              videoUrl: null,
+              videoTitle: null,
+              videoDuration: null,
+              channelName: null,
+              channelId: null,
+              publishedAt: null,
+              description: null,
+              thumbnails: null,
+              viewCount: null,
+              likeCount: null,
+              commentCount: null,
+              chapter_content: content,
               chapter_name: chapterName,
               chapter_about: chapterAbout,
               chapter_duration: chapterDuration,
-              chapter_content: content,
             });
 
             setGenerationProgress({ current: i + 1, total: chapters.length });
@@ -236,10 +296,24 @@ Chapter duration: ${chapterDuration}`;
             console.warn('Failed to generate chapter:', error?.message || error);
             // Still push the chapter, mark failed
             chapterContent.push({
+              chapter: chapterName,
+              searchQuery: chapterName,
+              videoId: null,
+              videoUrl: null,
+              videoTitle: null,
+              videoDuration: null,
+              channelName: null,
+              channelId: null,
+              publishedAt: null,
+              description: null,
+              thumbnails: null,
+              viewCount: null,
+              likeCount: null,
+              commentCount: null,
+              chapter_content: '',
               chapter_name: chapterName,
               chapter_about: chapterAbout,
               chapter_duration: chapterDuration,
-              chapter_content: '',
             });
             setChapterStatuses(prev => {
               const newStatuses = [...prev];
@@ -250,12 +324,15 @@ Chapter duration: ${chapterDuration}`;
           }
         }
 
-        setChapterContentCache((prev) => ({
+        setChapterVideoCache((prev) => ({
           ...prev,
           [course.courseId]: chapterContent,
         }));
 
-        console.log('Generated Chapter Content:', chapterContent);
+        console.log('Chapter Videos (No Video, All Null):', chapterContent);
+        
+        // Now save to DB!
+        await saveChaptersToDB(course.courseId, chapters, chapterContent);
       } catch (error) {
         console.warn('Failed to generate chapter content:', error?.message || error);
       } finally {
@@ -390,6 +467,10 @@ Chapter duration: ${chapterDuration}`;
       const chapterVideosAndContent = chapterTitles.map((chapterName, index) => {
         const video = videos?.[index] || {};
         const content = chapterContent?.[index] || {};
+        const originalChapter = chapters[index];
+        const chapterAbout = originalChapter?.about || originalChapter?.chapter_about || '';
+        const chapterDuration = originalChapter?.duration || originalChapter?.chapter_duration || '';
+
         return {
           chapter: chapterName,
           searchQuery: video.searchQuery || chapterName,
@@ -406,6 +487,9 @@ Chapter duration: ${chapterDuration}`;
           likeCount: video.likeCount || null,
           commentCount: video.commentCount || null,
           chapter_content: content.chapter_content || '',
+          chapter_name: chapterName,
+          chapter_about: chapterAbout,
+          chapter_duration: chapterDuration,
         };
       });
 
@@ -419,6 +503,9 @@ Chapter duration: ${chapterDuration}`;
       }));
 
       console.log('Generated Chapter Video AND Content Data:', chapterVideosAndContent);
+      
+      // Now save to DB!
+      await saveChaptersToDB(course.courseId, chapters, chapterVideosAndContent);
     } catch (error) {
       console.error('Failed to generate chapter content or video URLs:', error);
     } finally {
@@ -430,7 +517,6 @@ Chapter duration: ${chapterDuration}`;
     if (!course) return;
 
     const chapters = course?.courseOutput?.course?.chapters || course?.courseOutput?.chapters || [];
-    const cachedContent = chapterContentCache[course.courseId] || [];
     const cachedVideos = chapterVideoCache[course.courseId] || [];
     const failedIndices = chapterStatuses
       .map((status, idx) => status === 'failed' ? idx : -1)
@@ -444,7 +530,6 @@ Chapter duration: ${chapterDuration}`;
     setIsGenerating(true);
 
     try {
-      const newContent = [...cachedContent];
       const newVideos = [...cachedVideos];
 
       for (let i = 0; i < failedIndices.length; i++) {
@@ -526,37 +611,43 @@ Chapter duration: ${chapterDuration}`;
             });
           }
           
-          const newChapter = {
-            chapter_name: chapterName,
-            chapter_about: chapterAbout,
-            chapter_duration: chapterDuration,
+          newVideos[chapterIdx] = {
+            ...newVideos[chapterIdx],
             chapter_content: content,
           };
-          newContent[chapterIdx] = newChapter;
-          
-          // If we have videos, update that too (keep existing video info, add new content)
-          if (hasVideoIncluded(course) && newVideos[chapterIdx]) {
-            newVideos[chapterIdx] = {
-              ...newVideos[chapterIdx],
-              chapter_content: content,
-            };
-          }
         } catch (e) {
           console.warn(`Failed to retry chapter ${chapterIdx}:`, e);
         }
       }
 
-      setChapterContentCache((prev) => ({
+      setChapterVideoCache((prev) => ({
         ...prev,
-        [course.courseId]: newContent,
+        [course.courseId]: newVideos,
       }));
+
       if (hasVideoIncluded(course)) {
-        setChapterVideoCache((prev) => ({
+        const oldContent = chapterContentCache[course.courseId] || [];
+        const newContent = oldContent.map((item, idx) => {
+          const videoItem = newVideos[idx];
+          if (videoItem && item.chapter_name) {
+            return {
+              ...item,
+              chapter_content: videoItem.chapter_content || item.chapter_content,
+            };
+          }
+          return item;
+        });
+        setChapterContentCache((prev) => ({
           ...prev,
-          [course.courseId]: newVideos,
+          [course.courseId]: newContent,
         }));
         console.log('Updated chapter video and content!');
+      } else {
+        console.log('Chapter Videos (No Video, All Null):', newVideos);
       }
+      
+      // Save to DB after retry!
+      await saveChaptersToDB(course.courseId, chapters, newVideos);
     } catch (e) {
       console.warn('Failed to retry chapters:', e);
     } finally {
