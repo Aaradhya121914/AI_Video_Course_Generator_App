@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useUser } from "@clerk/nextjs";
+import Addcourse from "./_components/Addcourse";
 
 const Dashboard = () => {
   const { user } = useUser();
@@ -42,20 +43,19 @@ const Dashboard = () => {
 
   if (courses.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[50vh] gap-4">
-        <p className="text-lg text-gray-500">No courses on dashboard yet!</p>
-        <Link href="/">
-          <button className="px-6 py-3 bg-primary text-white rounded-lg hover:bg-purple-700 transition-colors cursor-pointer">
-            Create a Course
-          </button>
-        </Link>
+      <div>
+        <Addcourse />
+        <div className="flex flex-col items-center justify-center min-h-[50vh] gap-4 mt-8">
+          <p className="text-lg text-gray-500">No courses on dashboard yet!</p>
+        </div>
       </div>
     );
   }
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-8">My Dashboard</h1>
+      <Addcourse />
+      <h1 className="text-2xl font-bold mb-8 mt-8">My Dashboard</h1>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {courses.map((course) => {
           console.log("course object keys:", Object.keys(course));
@@ -86,7 +86,7 @@ const Dashboard = () => {
                     alt={courseName}
                     fill
                     className="object-cover"
-                                       unoptimized={courseBanner.startsWith('http')}
+                    unoptimized={courseBanner.startsWith('http')}
                   />
                 </div>
                 <div className="p-5 space-y-2">
