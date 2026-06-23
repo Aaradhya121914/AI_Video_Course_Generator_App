@@ -1,5 +1,5 @@
 import { db } from '../../../configs/db'
-import { Chapters } from '../../../configs/Schema'
+import { Chapters, CourseList } from '../../../configs/Schema'
 import { and, eq } from 'drizzle-orm'
 
 export async function POST(request) {
@@ -13,22 +13,32 @@ export async function POST(request) {
       )
     }
 
+    // Fetch course for isOnDashboard
+    const courseResult = await db
+      .select()
+      .from(CourseList)
+      .where(eq(CourseList.courseId, courseId))
+
     // Fetch all chapters for course
     const allChaptersResult = await db
       .select()
       .from(Chapters)
       .where(eq(Chapters.courseId, courseId))
     
+    // Sort chapters by position
+    const sortedAllChapters = allChaptersResult.sort((a, b) => (a.position || 0) - (b.position || 0))
+
     // If we also have a chapterId, fetch that one specifically
     let currentChapter = null
     if (chapterId) {
-      const chapterResult = allChaptersResult.find(ch => ch.chapterId === chapterId)
+      const chapterResult = sortedAllChapters.find(ch => ch.chapterId === chapterId)
       currentChapter = chapterResult || null
     }
 
     return Response.json({ 
       chapter: currentChapter, 
-      allChapters: allChaptersResult 
+      allChapters: sortedAllChapters,
+      isOnDashboard: courseResult[0]?.isOnDashboard || false
     })
   } catch (error) {
     console.error('Error fetching chapter:', error)

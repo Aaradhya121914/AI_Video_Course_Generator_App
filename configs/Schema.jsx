@@ -12,6 +12,8 @@ export const CourseList=pgTable("courseList",{
     createdBy:varchar("createdBy").notNull(),
     userName:varchar("userName"),
     userProfileImage:varchar("userProfileImage"),
+    isOnDashboard:boolean("isOnDashboard").notNull().default(false),
+    bannerImage:varchar("bannerImage").default("/Course_placeholder_Img.jpeg"),
 })
 
 export const Chapters=pgTable("chapters",{
@@ -34,5 +36,6 @@ export const Chapters=pgTable("chapters",{
     thumbnails:json("thumbnails"),
     viewCount:json("viewCount"),
     likeCount:json("likeCount"),
-    commentCount:json("commentCount")
+    commentCount:json("commentCount"),
+    position:integer("position").notNull().default(0)
 })

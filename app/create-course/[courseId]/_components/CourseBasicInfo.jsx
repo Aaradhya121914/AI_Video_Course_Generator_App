@@ -1,16 +1,22 @@
 import React, { useState, useEffect } from 'react'
 import Image from 'next/image'
+import Link from 'next/link'
 import { MdOutlineHiking } from "react-icons/md";
 import { Button } from '@/components/ui/button';
 import EditCourseBasicInfo from './EditCourseBasicInfo';
 
-const CourseBasicInfo = ({ course, refreshData }) => {
+const CourseBasicInfo = ({ course, refreshData, chapterVideoCache, courseId }) => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [uploading, setUploading] = useState(false);
 
+  // Get first chapter from chapterVideoCache (sorted by position)
+  const cachedChapters = chapterVideoCache?.[courseId] || [];
+  const firstChapter = cachedChapters[0];
+  const firstChapterId = firstChapter?.chapterId;
+
   useEffect(() => {
-    // Prefer explicit courseImageUrl, then nested course.imageUrl
-    const candidate = course?.courseOutput?.courseImageUrl || course?.courseOutput?.course?.imageUrl || null;
+    // Prefer bannerImage from course, then courseImageUrl, then nested course.imageUrl
+    const candidate = course?.bannerImage || course?.courseOutput?.courseImageUrl || course?.courseOutput?.course?.imageUrl || null;
     // ignore empty strings and set null to use placeholder
     if (candidate && candidate !== '') setSelectedFile(candidate);
     else setSelectedFile(null);
@@ -61,9 +67,17 @@ const CourseBasicInfo = ({ course, refreshData }) => {
           <h2 className='font-medium mt-2 flex gap-2 items-center text-primary'>
             <MdOutlineHiking />{course?.category}
           </h2>
-          <Button className='mt-5 w-full cursor-pointer' disabled={uploading}>
-            {uploading ? 'Uploading...' : 'Start Course'}
-          </Button>
+          {firstChapterId ? (
+            <Link href={`/create-course/${courseId}/${firstChapterId}`}>
+              <Button className='mt-5 w-full cursor-pointer' disabled={uploading}>
+                {uploading ? 'Uploading...' : 'Start Course'}
+              </Button>
+            </Link>
+          ) : (
+            <Button className='mt-5 w-full cursor-pointer' disabled={uploading}>
+              {uploading ? 'Uploading...' : 'Generate Course Content First'}
+            </Button>
+          )}
         </div>
         <div className="relative">
           <label htmlFor="upload-image" className='cursor-pointer block'>

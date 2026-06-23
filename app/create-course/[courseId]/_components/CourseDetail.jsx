@@ -5,7 +5,7 @@ import { LiaChalkboardTeacherSolid } from "react-icons/lia";
 import { MdOndemandVideo } from "react-icons/md";
 import { Button } from '@/components/ui/button';
 
-const CourseDetail = ({ course, onGenerateContent, onRetryFailed, isGenerating, hasFailedChapters }) => {
+const CourseDetail = ({ course, onGenerateContent, onRetryFailed, isGenerating, hasFailedChapters, isOnDashboard }) => {
   return (
     <div className="border p-6 rounded-xl shadow-sm mt-3">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
@@ -22,7 +22,15 @@ const CourseDetail = ({ course, onGenerateContent, onRetryFailed, isGenerating, 
           <GoClock className='text-4xl text-primary'/>
           <div>
             <h2 className='text-xs text-gray-500'>Duration</h2>
-            <h2 className='font-medium text-lg'>{course?.courseOutput?.total_duration || course?.courseOutput?.course?.total_estimated_duration || course?.courseOutput?.course?.total_duration}</h2>
+            <h2 className='font-medium text-lg'>
+              {course?.courseOutput?.course?.total_estimated_duration || 
+               course?.courseOutput?.course?.total_duration || 
+               course?.courseOutput?.total_estimated_duration || 
+               course?.courseOutput?.total_duration ||
+               course?.courseOutput?.duration ||
+               course?.courseOutput?.course?.duration ||
+               ''}
+            </h2>
           </div>
         </div>
 
@@ -52,16 +60,18 @@ const CourseDetail = ({ course, onGenerateContent, onRetryFailed, isGenerating, 
 
       </div>
 
-      <div className="mt-6 flex flex-col gap-4 md:flex-row md:justify-end">
-        <Button onClick={onGenerateContent} disabled={isGenerating} className="bg-primary text-white cursor-pointer hover:bg-purple-800 hover:text-white w-full md:w-auto">
-          {isGenerating ? 'Generating...' : 'Generate Course Content'}
-        </Button>
-        {hasFailedChapters && (
-          <Button onClick={onRetryFailed} disabled={isGenerating} variant={'outline'} className="w-full md:w-auto">
-            Retry Failed Chapters
+      {!isOnDashboard && (
+        <div className="mt-6 flex flex-col gap-4 md:flex-row md:justify-end">
+          <Button onClick={onGenerateContent} disabled={isGenerating} className="bg-primary text-white cursor-pointer hover:bg-purple-800 hover:text-white w-full md:w-auto">
+            {isGenerating ? 'Generating...' : 'Generate Course Content'}
           </Button>
-        )}
-      </div>
+          {hasFailedChapters && (
+            <Button onClick={onRetryFailed} disabled={isGenerating} variant={'outline'} className="w-full md:w-auto">
+              Retry Failed Chapters
+            </Button>
+          )}
+        </div>
+      )}
     </div>
   )
 }

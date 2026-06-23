@@ -35,7 +35,8 @@ const ChapterPage = ({ params }) => {
   const [isEditing, setIsEditing] = useState(false)
   const [editedContent, setEditedContent] = useState('')
   const [isUpdating, setIsUpdating] = useState(false)
-  
+  const [isOnDashboard, setIsOnDashboard] = useState(false)
+
   useEffect(() => {
     const fetchChapter = async () => {
       try {
@@ -47,7 +48,7 @@ const ChapterPage = ({ params }) => {
         const data = await response.json()
         setChapter(data.chapter)
         setAllChapters(data.allChapters || [])
-        // Initialize edited content when data is loaded
+        setIsOnDashboard(data.isOnDashboard || false)
         const content = data.chapter?.chapterContent
         setEditedContent(
           typeof content === 'string'
@@ -61,7 +62,7 @@ const ChapterPage = ({ params }) => {
         setLoading(false)
       }
     }
-    
+
     if (courseId && chapterId) {
       fetchChapter()
     }
@@ -75,7 +76,6 @@ const ChapterPage = ({ params }) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ courseId, chapterId, chapterContent: editedContent })
       })
-      // Refresh chapter data
       const response = await fetch('/api/get-chapter', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -91,7 +91,6 @@ const ChapterPage = ({ params }) => {
     }
   }
 
-  // Find index of current chapter
   const currentIndex = allChapters.findIndex(ch => ch.chapterId === chapterId)
   const isFirst = currentIndex === 0
   const isLast = currentIndex === allChapters.length - 1
@@ -163,7 +162,6 @@ const ChapterPage = ({ params }) => {
           </div>
         )}
 
-        {/* Navigation Buttons */}
         <div className="flex justify-between items-center gap-4">
           {prevChapterId ? (
             <Link href={`/create-course/${courseId}/${prevChapterId}`}>
@@ -176,86 +174,87 @@ const ChapterPage = ({ params }) => {
               Previous Chapter
             </Button>
           )}
-          
-          <Dialog open={isEditing} onOpenChange={setIsEditing}>
-            <DialogTrigger asChild>
-              <Button variant="default" className="cursor-pointer hover:bg-purple-600 text-white">
-                Edit Chapter Content
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[625px] max-h-[80vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Edit Chapter Content</DialogTitle>
-                <DialogDescription>
-                  Update the content for {chapter.chapterName}
-                </DialogDescription>
-              </DialogHeader>
-              <div className="py-4">
-                <div className="flex justify-between text-sm text-gray-500 mb-2">
-                  <span>Chapter Content</span>
-                  <span>
-                    {editedContent.split('\n').length}/2000 lines
-                  </span>
-                </div>
-                <Textarea
-                  placeholder="Enter chapter content here..."
-                  value={editedContent}
-                  onChange={(e) => {
-                    const newLines = e.target.value.split('\n').length
-                    if (newLines <= 2000) {
-                      setEditedContent(e.target.value)
-                    }
-                  }}
-                  className="min-h-[300px] max-h-[400px] resize-y overflow-y-auto"
-                />
-                {editedContent.split('\n').length >= 2000 && (
-                  <p className="text-sm text-red-500 mt-2">
-                    Maximum 2000 lines allowed
-                  </p>
-                )}
-              </div>
-              <DialogFooter>
-                <Button
-                  variant="outline"
-                  className="cursor-pointer"
-                  onClick={() => {
-                    // Reset content to original
-                    const content = chapter.chapterContent
-                    setEditedContent(
-                      typeof content === 'string'
-                        ? content 
-                        : content?.content || ''
-                    )
-                    setIsEditing(false)
-                  }}
-                >
-                  Cancel
+
+          {!isOnDashboard && (
+            <Dialog open={isEditing} onOpenChange={setIsEditing}>
+              <DialogTrigger asChild>
+                <Button variant="default" className="cursor-pointer hover:bg-purple-600 text-white">
+                  Edit Chapter Content
                 </Button>
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button disabled={isUpdating || editedContent.split('\n').length > 2000} className="cursor-pointer hover:bg-purple-600 text-white">
-                      {isUpdating ? 'Updating...' : 'Save Changes'}
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Are you sure you want to update the course content of this chapter?
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel className="cursor-pointer">Cancel</AlertDialogCancel>
-                      <AlertDialogAction onClick={handleUpdateContent} className="cursor-pointer hover:bg-purple-600 text-white">
-                        OK
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-          
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[625px] max-h-[80vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Edit Chapter Content</DialogTitle>
+                  <DialogDescription>
+                    Update the content for {chapter.chapterName}
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="py-4">
+                  <div className="flex justify-between text-sm text-gray-500 mb-2">
+                    <span>Chapter Content</span>
+                    <span>
+                      {editedContent.split('\n').length}/2000 lines
+                    </span>
+                  </div>
+                  <Textarea
+                    placeholder="Enter chapter content here..."
+                    value={editedContent}
+                    onChange={(e) => {
+                      const newLines = e.target.value.split('\n').length
+                      if (newLines <= 2000) {
+                        setEditedContent(e.target.value)
+                      }
+                    }}
+                    className="min-h-[300px] max-h-[400px] resize-y overflow-y-auto"
+                  />
+                  {editedContent.split('\n').length >= 2000 && (
+                    <p className="text-sm text-red-500 mt-2">
+                      Maximum 2000 lines allowed
+                    </p>
+                  )}
+                </div>
+                <DialogFooter>
+                  <Button
+                    variant="outline"
+                    className="cursor-pointer"
+                    onClick={() => {
+                      const content = chapter.chapterContent
+                      setEditedContent(
+                        typeof content === 'string'
+                          ? content
+                          : content?.content || ''
+                      )
+                      setIsEditing(false)
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button disabled={isUpdating || editedContent.split('\n').length > 2000} className="cursor-pointer hover:bg-purple-600 text-white">
+                        {isUpdating ? 'Updating...' : 'Save Changes'}
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Are you sure you want to update the course content of this chapter?
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel className="cursor-pointer">Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleUpdateContent} className="cursor-pointer hover:bg-purple-600 text-white">
+                          OK
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          )}
+
           {nextChapterId ? (
             <Link href={`/create-course/${courseId}/${nextChapterId}`}>
               <Button variant="outline" className="cursor-pointer">
@@ -274,4 +273,3 @@ const ChapterPage = ({ params }) => {
 }
 
 export default ChapterPage
-
