@@ -6,7 +6,7 @@ import { useUser } from '@clerk/nextjs'
 import { and, eq } from 'drizzle-orm';
 import CourseBasicInfo from './_components/CourseBasicInfo';
 import CourseDetail from './_components/CourseDetail';
-import ChapterList from './_components/ChapterList';
+import ChapterList from './_components/ChapterList';  
 import service from '../../../configs/Service';
 import { parseModelTextToJson } from '../../../lib/normalizeCourse';
 import { Progress } from '@/components/ui/progress';
@@ -38,8 +38,48 @@ const CourseLayout = ({ params }) => {
       ));
       setCourse(result[0]);
       console.log('Course Details: ', result);
+      
+      if (result[0]) {
+        await getChaptersFromDB(courseId);
+      }
     } catch (err) {
       console.error('getCourse error:', err);
+    }
+  }
+  
+  const getChaptersFromDB = async (courseIdParam) => {
+    try {
+      const dbChapters = await db.select().from(Chapters).where(eq(Chapters.courseId, courseIdParam));
+      if (dbChapters.length > 0) {
+        const mappedChapters = dbChapters.map(ch => ({
+          chapter: ch.chapterName,
+          chapterName: ch.chapterName,
+          chapterAbout: ch.chapterAbout,
+          chapterDuration: ch.chapterDuration,
+          chapterContent: ch.chapterContent?.content || ch.chapterContent,
+          searchQuery: ch.searchQuery,
+          videoId: ch.videoId,
+          videoUrl: ch.videoUrl,
+          videoTitle: ch.videoTitle,
+          videoDuration: ch.videoDuration,
+          channelName: ch.channelName,
+          channelId: ch.channelId,
+          publishedAt: ch.publishedAt,
+          description: ch.description,
+          thumbnails: ch.thumbnails,
+          viewCount: ch.viewCount,
+          likeCount: ch.likeCount,
+          commentCount: ch.commentCount,
+          chapterId: ch.chapterId
+        }));
+        setChapterVideoCache(prev => ({
+          ...prev,
+          [courseIdParam]: mappedChapters
+        }));
+        console.log('Loaded chapters from DB:', mappedChapters);
+      }
+    } catch (err) {
+      console.error('getChaptersFromDB error:', err);
     }
   }
 
@@ -104,6 +144,8 @@ const CourseLayout = ({ params }) => {
       // First delete any existing chapters for this course
       await db.delete(Chapters).where(eq(Chapters.courseId, courseIdParam));
 
+      const updatedChapters = []
+
       // Insert new chapters
       const insertPromises = generatedChapters.map(async (chapter, index) => {
         const originalChapter = originalChapters[index];
@@ -134,12 +176,19 @@ const CourseLayout = ({ params }) => {
           likeCount: chapter.likeCount || null,
           commentCount: chapter.commentCount || null,
         });
+        
+        updatedChapters.push({
+          ...chapter,
+          chapterId
+        })
       });
 
       await Promise.all(insertPromises);
       console.log('All chapters saved to database successfully!');
+      return updatedChapters;
     } catch (error) {
       console.error('Error saving chapters to DB:', error);
+      return generatedChapters;
     }
   };
 
@@ -324,15 +373,14 @@ Chapter duration: ${chapterDuration}`;
           }
         }
 
+        const updatedChapters = await saveChaptersToDB(course.courseId, chapters, chapterContent);
+
         setChapterVideoCache((prev) => ({
           ...prev,
-          [course.courseId]: chapterContent,
+          [course.courseId]: updatedChapters,
         }));
 
-        console.log('Chapter Videos (No Video, All Null):', chapterContent);
-        
-        // Now save to DB!
-        await saveChaptersToDB(course.courseId, chapters, chapterContent);
+        console.log('Chapter Videos (No Video, All Null):', updatedChapters);
       } catch (error) {
         console.warn('Failed to generate chapter content:', error?.message || error);
       } finally {
@@ -493,19 +541,20 @@ Chapter duration: ${chapterDuration}`;
         };
       });
 
-      setChapterVideoCache((prev) => ({
-        ...prev,
-        [course.courseId]: chapterVideosAndContent,
-      }));
-      setChapterContentCache((prev) => ({
-        ...prev,
-        [course.courseId]: chapterContent,
-      }));
-
       console.log('Generated Chapter Video AND Content Data:', chapterVideosAndContent);
-      
-      // Now save to DB!
-      await saveChaptersToDB(course.courseId, chapters, chapterVideosAndContent);
+        
+        // Now save to DB!
+        const updatedChapters = await saveChaptersToDB(course.courseId, chapters, chapterVideosAndContent);
+        
+        setChapterVideoCache((prev) => ({
+          ...prev,
+          [course.courseId]: updatedChapters,
+        }));
+        
+        setChapterContentCache((prev) => ({
+          ...prev,
+          [course.courseId]: chapterContent,
+        }));
     } catch (error) {
       console.error('Failed to generate chapter content or video URLs:', error);
     } finally {
@@ -620,15 +669,18 @@ Chapter duration: ${chapterDuration}`;
         }
       }
 
+      // Save to DB after retry!
+      const updatedChapters = await saveChaptersToDB(course.courseId, chapters, newVideos);
+      
       setChapterVideoCache((prev) => ({
         ...prev,
-        [course.courseId]: newVideos,
+        [course.courseId]: updatedChapters,
       }));
 
       if (hasVideoIncluded(course)) {
         const oldContent = chapterContentCache[course.courseId] || [];
         const newContent = oldContent.map((item, idx) => {
-          const videoItem = newVideos[idx];
+          const videoItem = updatedChapters[idx];
           if (videoItem && item.chapter_name) {
             return {
               ...item,
@@ -643,11 +695,8 @@ Chapter duration: ${chapterDuration}`;
         }));
         console.log('Updated chapter video and content!');
       } else {
-        console.log('Chapter Videos (No Video, All Null):', newVideos);
+        console.log('Chapter Videos (No Video, All Null):', updatedChapters);
       }
-      
-      // Save to DB after retry!
-      await saveChaptersToDB(course.courseId, chapters, newVideos);
     } catch (e) {
       console.warn('Failed to retry chapters:', e);
     } finally {
@@ -696,7 +745,7 @@ Chapter duration: ${chapterDuration}`;
       />
       
       {/* List of Lesson */}
-      <ChapterList course={course} />
+      <ChapterList course={course} chapterVideoCache={chapterVideoCache} courseId={courseId} />
     </div>
   )
 }

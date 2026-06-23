@@ -52,15 +52,15 @@ const CourseDetail = ({ course, onGenerateContent, onRetryFailed, isGenerating, 
 
       </div>
 
-      <div className="mt-6 flex gap-4 justify-end">
+      <div className="mt-6 flex flex-col gap-4 md:flex-row md:justify-end">
+        <Button onClick={onGenerateContent} disabled={isGenerating} className="bg-primary text-white cursor-pointer hover:bg-purple-800 hover:text-white w-full md:w-auto">
+          {isGenerating ? 'Generating...' : 'Generate Course Content'}
+        </Button>
         {hasFailedChapters && (
-          <Button onClick={onRetryFailed} disabled={isGenerating} variant={'outline'}>
+          <Button onClick={onRetryFailed} disabled={isGenerating} variant={'outline'} className="w-full md:w-auto">
             Retry Failed Chapters
           </Button>
         )}
-        <Button onClick={onGenerateContent} disabled={isGenerating} className="bg-primary text-white cursor-pointer hover:bg-purple-800 hover:text-white">
-          {isGenerating ? 'Generating...' : 'Generate Course Content'}
-        </Button>
       </div>
     </div>
   )

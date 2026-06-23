@@ -1,5 +1,5 @@
 
-import { pgTable, serial, varchar, integer, boolean, json } from "drizzle-orm/pg-core";
+import { pgTable, serial, varchar, integer, boolean, text, json } from "drizzle-orm/pg-core";
 
 export const CourseList=pgTable("courseList",{ 
     id:serial("id").primaryKey(),
