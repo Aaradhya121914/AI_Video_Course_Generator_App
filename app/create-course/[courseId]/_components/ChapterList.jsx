@@ -14,8 +14,8 @@ import {
 } from '@/components/ui/alert-dialog'
 
 const ChapterList = ({ course, chapterVideoCache, refreshData, courseId, userId }) => {
-  // Use chapters from course.courseOutput directly
-  const chapters = course?.courseOutput?.course?.chapters || course?.courseOutput?.chapters || []
+  // Use cachedVideos (sorted by index/position) instead of courseOutput chapters
+  const cachedVideos = chapterVideoCache?.[courseId] || []
 
   if (!course || !courseId) {
     return null
@@ -25,11 +25,8 @@ const ChapterList = ({ course, chapterVideoCache, refreshData, courseId, userId 
     <div className='border mt-5 ml-4 rounded-lg shadow-sm p-4'>
       <h2 className='text-lg font-semibold mb-4'>Chapters</h2>
       <div className="space-y-4">
-        {chapters.map((chapter, index) => {
-          const chapterName = chapter?.name || chapter?.chapter_name || `Chapter ${index + 1}`
-          const chapterAbout = chapter?.about || chapter?.chapter_about || ''
-          const chapterDuration = chapter?.duration || chapter?.chapter_duration || ''
-          const chapterId = chapter?.id || chapter?.chapter_id
+        {cachedVideos.map((cachedChapter, index) => {
+          const chapterId = cachedChapter?.chapterId
           return (
             <Link
               key={chapterId || index}
@@ -38,14 +35,14 @@ const ChapterList = ({ course, chapterVideoCache, refreshData, courseId, userId 
               <div className='border p-4 rounded-lg shadow-sm hover:shadow-md transition-all cursor-pointer'>
                 <div className='flex flex-col gap-3 md:flex-row md:items-center md:justify-between md:gap-4'>
                   <div className='flex items-start gap-3'>
-                    <h2 className="bg-primary h-10 w-10 rounded-full font-bold text-white flex items-center justify-center">{index + 1}</h2>
+                    <h2 className="bg-primary h-10 w-10 rounded-full font-bold text-white flex items-center justify-center">{cachedChapter?.index || index + 1}</h2>
                     <div>
-                      <h2 className='text-lg font-semibold'>{chapterName}</h2>
-                      <p className='text-sm text-gray-500'>{chapterAbout}</p>
-                      <p className='text-sm text-primary mt-1 md:hidden'>{chapterDuration}</p>
+                      <h2 className='text-lg font-semibold'>{cachedChapter?.chapterName || cachedChapter?.chapter}</h2>
+                      <p className='text-sm text-gray-500'>{cachedChapter?.chapterAbout}</p>
+                      <p className='text-sm text-primary mt-1 md:hidden'>{cachedChapter?.chapterDuration}</p>
                     </div>
                   </div>
-                  <p className='hidden md:block text-sm text-primary whitespace-nowrap'>{chapterDuration}</p>
+                  <p className='hidden md:block text-sm text-primary whitespace-nowrap'>{cachedChapter?.chapterDuration}</p>
                 </div>
               </div>
             </Link>
