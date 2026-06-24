@@ -50,7 +50,7 @@ const CourseLayout = ({ params }) => {
   const getChaptersFromDB = async (courseIdParam) => {
     try {
       const dbChapters = await db.select().from(Chapters).where(eq(Chapters.courseId, courseIdParam));
-      const sortedChapters = dbChapters.sort((a, b) => (a.position || 0) - (b.position || 0));
+      const sortedChapters = dbChapters.sort((a, b) => (a.index || a.position || 0) - (b.index || b.position || 0));
       if (sortedChapters.length > 0) {
         const mappedChapters = sortedChapters.map(ch => ({
           chapter: ch.chapterName,
@@ -380,12 +380,12 @@ Chapter duration: ${chapterDuration}`;
           }
         }
 
-        const updatedChapters = await saveChaptersToDB(course.courseId, chapters, chapterContent);
-
-        setChapterVideoCache((prev) => ({
-          ...prev,
-          [course.courseId]: updatedChapters,
-        }));
+          const updatedChapters = await saveChaptersToDB(course.courseId, chapters, chapterContent);
+          const sortedUpdatedChapters = updatedChapters.sort((a, b) => (a.index || 0) - (b.index || 0));
+          setChapterVideoCache((prev) => ({
+            ...prev,
+            [course.courseId]: sortedUpdatedChapters,
+          }));
 
         console.log('Chapter Videos (No Video, All Null):', updatedChapters);
       } catch (error) {
@@ -551,12 +551,12 @@ Chapter duration: ${chapterDuration}`;
       console.log('Generated Chapter Video AND Content Data:', chapterVideosAndContent);
         
         // Now save to DB!
-        const updatedChapters = await saveChaptersToDB(course.courseId, chapters, chapterVideosAndContent);
-        
-        setChapterVideoCache((prev) => ({
-          ...prev,
-          [course.courseId]: updatedChapters,
-        }));
+          const updatedChapters = await saveChaptersToDB(course.courseId, chapters, chapterVideosAndContent);
+          const sortedUpdatedChapters = updatedChapters.sort((a, b) => (a.index || 0) - (b.index || 0));
+          setChapterVideoCache((prev) => ({
+            ...prev,
+            [course.courseId]: sortedUpdatedChapters,
+          }));
         
         setChapterContentCache((prev) => ({
           ...prev,
@@ -677,12 +677,12 @@ Chapter duration: ${chapterDuration}`;
       }
 
       // Save to DB after retry!
-      const updatedChapters = await saveChaptersToDB(course.courseId, chapters, newVideos);
-      
-      setChapterVideoCache((prev) => ({
-        ...prev,
-        [course.courseId]: updatedChapters,
-      }));
+        const updatedChapters = await saveChaptersToDB(course.courseId, chapters, newVideos);
+        const sortedUpdatedChapters = updatedChapters.sort((a, b) => (a.index || 0) - (b.index || 0));
+        setChapterVideoCache((prev) => ({
+          ...prev,
+          [course.courseId]: sortedUpdatedChapters,
+        }));
 
       if (hasVideoIncluded(course)) {
         const oldContent = chapterContentCache[course.courseId] || [];
