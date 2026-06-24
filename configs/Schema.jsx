@@ -18,6 +18,7 @@ export const CourseList=pgTable("courseList",{
 
 export const Chapters=pgTable("chapters",{
     id:serial("id").primaryKey(),
+    index:integer("index"),
     courseId:varchar("courseId").notNull(),
     chapterId:varchar("chapterId").notNull(),
     chapterName:varchar("chapterName"),

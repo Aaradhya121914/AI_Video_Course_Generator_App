@@ -68,11 +68,15 @@ export async function POST(request) {
       },
     };
 
-    const [updatedCourse] = await db
-      .update(CourseList)
-      .set({ courseOutput: updatedOutput })
-      .where(eq(CourseList.courseId, courseId.toString()))
-      .returning({ courseOutput: CourseList.courseOutput });
+    
+const [updatedCourse] = await db
+  .update(CourseList)
+  .set({ 
+    bannerImage: uploadResult.secure_url, 
+    courseOutput: updatedOutput 
+  })
+  .where(eq(CourseList.courseId, courseId.toString()))
+  .returning();
 
     return NextResponse.json({
       secure_url: uploadResult.secure_url,

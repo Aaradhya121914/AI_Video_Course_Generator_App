@@ -47,44 +47,98 @@ const CourseLayout = ({ params }) => {
     }
   }
   
+  // const getChaptersFromDB = async (courseIdParam) => {
+  //   try {
+  //     const dbChapters = await db.select().from(Chapters).where(eq(Chapters.courseId, courseIdParam));
+  //     const sortedChapters = dbChapters.sort((a, b) => (a.index || a.position || 0) - (b.index || b.position || 0));
+  //     if (sortedChapters.length > 0) {
+  //       const mappedChapters = sortedChapters.map(ch => ({
+  //         chapter: ch.chapterName,
+  //         chapterName: ch.chapterName,
+  //         chapterAbout: ch.chapterAbout,
+  //         chapterDuration: ch.chapterDuration,
+  //         chapterContent: ch.chapterContent?.content || ch.chapterContent,
+  //         searchQuery: ch.searchQuery,
+  //         videoId: ch.videoId,
+  //         videoUrl: ch.videoUrl,
+  //         videoTitle: ch.videoTitle,
+  //         videoDuration: ch.videoDuration,
+  //         channelName: ch.channelName,
+  //         channelId: ch.channelId,
+  //         publishedAt: ch.publishedAt,
+  //         description: ch.description,
+  //         thumbnails: ch.thumbnails,
+  //         viewCount: ch.viewCount,
+  //         likeCount: ch.likeCount,
+  //         commentCount: ch.commentCount,
+  //         chapterId: ch.chapterId,
+  //         index: ch.index || null,
+  //         position: ch.position || null
+  //       }));
+  //       setChapterVideoCache(prev => ({
+  //         ...prev,
+  //         [courseIdParam]: mappedChapters
+  //       }));
+  //       console.log('Loaded chapters from DB:', mappedChapters);
+  //     }
+  //   } catch (err) {
+  //     console.error('getChaptersFromDB error:', err);
+  //   }
+  // };
+
   const getChaptersFromDB = async (courseIdParam) => {
-    try {
-      const dbChapters = await db.select().from(Chapters).where(eq(Chapters.courseId, courseIdParam));
-      const sortedChapters = dbChapters.sort((a, b) => (a.index || a.position || 0) - (b.index || b.position || 0));
-      if (sortedChapters.length > 0) {
-        const mappedChapters = sortedChapters.map(ch => ({
-          chapter: ch.chapterName,
-          chapterName: ch.chapterName,
-          chapterAbout: ch.chapterAbout,
-          chapterDuration: ch.chapterDuration,
-          chapterContent: ch.chapterContent?.content || ch.chapterContent,
-          searchQuery: ch.searchQuery,
-          videoId: ch.videoId,
-          videoUrl: ch.videoUrl,
-          videoTitle: ch.videoTitle,
-          videoDuration: ch.videoDuration,
-          channelName: ch.channelName,
-          channelId: ch.channelId,
-          publishedAt: ch.publishedAt,
-          description: ch.description,
-          thumbnails: ch.thumbnails,
-          viewCount: ch.viewCount,
-          likeCount: ch.likeCount,
-          commentCount: ch.commentCount,
-          chapterId: ch.chapterId,
-          index: ch.index || null,
-          position: ch.position || null
-        }));
-        setChapterVideoCache(prev => ({
-          ...prev,
-          [courseIdParam]: mappedChapters
-        }));
-        console.log('Loaded chapters from DB:', mappedChapters);
-      }
-    } catch (err) {
-      console.error('getChaptersFromDB error:', err);
+  try {
+    const dbChapters = await db.select().from(Chapters).where(eq(Chapters.courseId, courseIdParam));
+    const sortedChapters = dbChapters.sort((a, b) => (a.index || a.position || 0) - (b.index || b.position || 0));
+    let chaptersToUse = [];
+
+    if (sortedChapters.length > 0) {
+      chaptersToUse = sortedChapters.map(ch => ({
+        chapter: ch.chapterName,
+        chapterName: ch.chapterName,
+        chapterAbout: ch.chapterAbout,
+        chapterDuration: ch.chapterDuration,
+        chapterContent: ch.chapterContent?.content || ch.chapterContent,
+        searchQuery: ch.searchQuery,
+        videoId: ch.videoId,
+        videoUrl: ch.videoUrl,
+        videoTitle: ch.videoTitle,
+        videoDuration: ch.videoDuration,
+        channelName: ch.channelName,
+        channelId: ch.channelId,
+        publishedAt: ch.publishedAt,
+        description: ch.description,
+        thumbnails: ch.thumbnails,
+        viewCount: ch.viewCount,
+        likeCount: ch.likeCount,
+        commentCount: ch.commentCount,
+        chapterId: ch.chapterId,
+        index: ch.index || null,
+        position: ch.position || null
+      }));
+    } else {
+      // Fallback to course.courseOutput chapters if no DB chapters!
+      const outputChapters = course?.courseOutput?.chapters || course?.courseOutput?.course?.chapters || [];
+      chaptersToUse = outputChapters.map((ch, idx) => ({
+        chapter: ch.name || ch.chapter_name || `Chapter ${idx + 1}`,
+        chapterName: ch.name || ch.chapter_name || `Chapter ${idx + 1}`,
+        chapterAbout: ch.about || ch.chapter_about || '',
+        chapterDuration: ch.duration || ch.chapter_duration || '',
+        index: idx + 1,
+        position: idx,
+        chapterId: null // No chapterId yet until we generate content
+      }));
     }
-  };
+
+    setChapterVideoCache(prev => ({
+      ...prev,
+      [courseIdParam]: chaptersToUse
+    }));
+    console.log('Chapters loaded:', chaptersToUse);
+  } catch (err) {
+    console.error('getChaptersFromDB error:', err);
+  }
+};
 
   const hasVideoIncluded = (course) => {
     if (!course) return false;
@@ -716,7 +770,13 @@ Chapter duration: ${chapterDuration}`;
       <h2 className="font-bold text-center text-2xl">Course Layout</h2>
       
       {/* Basic Info */}
-      <CourseBasicInfo course={course} refreshData={()=>getCourse()}/>
+      {/* <CourseBasicInfo course={course} refreshData={()=>getCourse()}/> */}
+      <CourseBasicInfo 
+  course={course} 
+  refreshData={()=>getCourse()} 
+  chapterVideoCache={chapterVideoCache} 
+  courseId={courseId} 
+/>
       
       {/* Generation Progress */}
       {isGenerating && (
@@ -743,16 +803,24 @@ Chapter duration: ${chapterDuration}`;
       )}
       
       {/* Course Detail */}
-      <CourseDetail 
-        course={course} 
-        onGenerateContent={handleGenerateCourseContent} 
-        onRetryFailed={handleRetryFailedChapters}
-        isGenerating={isGenerating} 
-        hasFailedChapters={chapterStatuses.some(s => s === 'failed')}
-      />
+     <CourseDetail 
+  course={course} 
+  onGenerateContent={handleGenerateCourseContent} 
+  onRetryFailed={handleRetryFailedChapters}
+  isGenerating={isGenerating} 
+  hasFailedChapters={chapterStatuses.some(s => s === 'failed')}
+  chapterVideoCache={chapterVideoCache}
+  courseId={courseId}
+/>
       
       {/* List of Lesson */}
-      <ChapterList course={course} chapterVideoCache={chapterVideoCache} courseId={courseId} />
+      <ChapterList 
+  course={course} 
+  chapterVideoCache={chapterVideoCache} 
+  courseId={courseId} 
+  refreshData={() => getCourse()} 
+  userId={user?.primaryEmailAddress?.emailAddress} 
+/>
     </div>
   )
 }

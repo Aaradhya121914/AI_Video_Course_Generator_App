@@ -5,7 +5,9 @@ import { LiaChalkboardTeacherSolid } from "react-icons/lia";
 import { MdOndemandVideo } from "react-icons/md";
 import { Button } from '@/components/ui/button';
 
-const CourseDetail = ({ course, onGenerateContent, onRetryFailed, isGenerating, hasFailedChapters, isOnDashboard }) => {
+const CourseDetail = ({ course, onGenerateContent, onRetryFailed, isGenerating, hasFailedChapters, isOnDashboard, chapterVideoCache, courseId }) => {
+
+   const isContentGenerated = chapterVideoCache?.[courseId]?.length > 0;
   return (
     <div className="border p-6 rounded-xl shadow-sm mt-3">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
@@ -60,18 +62,22 @@ const CourseDetail = ({ course, onGenerateContent, onRetryFailed, isGenerating, 
 
       </div>
 
-      {!isOnDashboard && (
-        <div className="mt-6 flex flex-col gap-4 md:flex-row md:justify-end">
-          <Button onClick={onGenerateContent} disabled={isGenerating} className="bg-primary text-white cursor-pointer hover:bg-purple-800 hover:text-white w-full md:w-auto">
-            {isGenerating ? 'Generating...' : 'Generate Course Content'}
-          </Button>
-          {hasFailedChapters && (
-            <Button onClick={onRetryFailed} disabled={isGenerating} variant={'outline'} className="w-full md:w-auto">
-              Retry Failed Chapters
-            </Button>
-          )}
-        </div>
-      )}
+     {!isOnDashboard && (
+  <div className="mt-6 flex flex-col gap-4 md:flex-row md:justify-end">
+    <Button 
+      onClick={onGenerateContent} 
+      disabled={isGenerating || isContentGenerated} 
+      className="bg-primary text-white cursor-pointer hover:bg-purple-800 hover:text-white w-full md:w-auto"
+    >
+      {isGenerating ? 'Generating...' : isContentGenerated ? 'Course Content Already Generated' : 'Generate Course Content'}
+    </Button>
+    {hasFailedChapters && (
+      <Button onClick={onRetryFailed} disabled={isGenerating} variant={'outline'} className="w-full md:w-auto">
+        Retry Failed Chapters
+      </Button>
+    )}
+  </div>
+)}
     </div>
   )
 }

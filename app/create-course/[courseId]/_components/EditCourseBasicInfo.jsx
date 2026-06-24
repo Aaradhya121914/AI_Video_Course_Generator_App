@@ -64,11 +64,11 @@ const EditCourseBasicInfo = ({ course, refreshData }) => {
       .set({
         courseOutput: updatedCourse.courseOutput,
       })
-      .where(eq(CourseList?.id, course?.id))
+      .where(eq(CourseList.courseId, course?.courseId))
       .returning({ id: CourseList.id });
     console.log("Update Result: ", result);
 
-    refreshData(true);
+    refreshData();
   };
   return (
     <Dialog>

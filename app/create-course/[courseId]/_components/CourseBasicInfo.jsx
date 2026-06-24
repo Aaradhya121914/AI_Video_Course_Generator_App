@@ -9,7 +9,7 @@ const CourseBasicInfo = ({ course, refreshData, chapterVideoCache, courseId }) =
   const [selectedFile, setSelectedFile] = useState(null);
   const [uploading, setUploading] = useState(false);
 
-  // Get first chapter from chapterVideoCache (sorted by position)
+  // Get first chapter from chapterVideoCache (sorted by index)
   const cachedChapters = chapterVideoCache?.[courseId] || [];
   const firstChapter = cachedChapters[0];
   const firstChapterId = firstChapter?.chapterId;
@@ -59,7 +59,7 @@ const CourseBasicInfo = ({ course, refreshData, chapterVideoCache, courseId }) =
         <div>
           <h2 className="font-bold text-2xl">
             {course?.courseOutput?.course_name || course?.courseOutput?.course?.name}
-            <EditCourseBasicInfo course={course} refreshData={() => refreshData(true)} />
+            <EditCourseBasicInfo course={course} refreshData={refreshData} />
           </h2>
           <p className="text-sm text-gray-400 mt-3">
             {course?.courseOutput?.description || course?.courseOutput?.course?.description}
