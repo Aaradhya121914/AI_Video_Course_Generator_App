@@ -5,9 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import Link from "next/link";
 
+
 const Addcourse = () => {
   const { user } = useUser();
   return (
+    <div>
+  
     <div className="flex items-center justify-between">
       <div>
         <h2 className="text-2xl">
@@ -22,6 +25,7 @@ const Addcourse = () => {
           Create AI Course
         </Button>
       </Link>
+    </div>
     </div>
   );
 };
