@@ -50,8 +50,9 @@ const CourseLayout = ({ params }) => {
   const getChaptersFromDB = async (courseIdParam) => {
     try {
       const dbChapters = await db.select().from(Chapters).where(eq(Chapters.courseId, courseIdParam));
-      if (dbChapters.length > 0) {
-        const mappedChapters = dbChapters.map(ch => ({
+      const sortedChapters = dbChapters.sort((a, b) => (a.position || 0) - (b.position || 0));
+      if (sortedChapters.length > 0) {
+        const mappedChapters = sortedChapters.map(ch => ({
           chapter: ch.chapterName,
           chapterName: ch.chapterName,
           chapterAbout: ch.chapterAbout,
@@ -70,7 +71,9 @@ const CourseLayout = ({ params }) => {
           viewCount: ch.viewCount,
           likeCount: ch.likeCount,
           commentCount: ch.commentCount,
-          chapterId: ch.chapterId
+          chapterId: ch.chapterId,
+          index: ch.index || null,
+          position: ch.position || null
         }));
         setChapterVideoCache(prev => ({
           ...prev,
@@ -81,7 +84,7 @@ const CourseLayout = ({ params }) => {
     } catch (err) {
       console.error('getChaptersFromDB error:', err);
     }
-  }
+  };
 
   const hasVideoIncluded = (course) => {
     if (!course) return false;
