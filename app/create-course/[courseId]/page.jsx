@@ -50,9 +50,8 @@ const CourseLayout = ({ params }) => {
   const getChaptersFromDB = async (courseIdParam) => {
     try {
       const dbChapters = await db.select().from(Chapters).where(eq(Chapters.courseId, courseIdParam));
-      const sortedChapters = dbChapters.sort((a, b) => (a.position || 0) - (b.position || 0));
-      if (sortedChapters.length > 0) {
-        const mappedChapters = sortedChapters.map(ch => ({
+      if (dbChapters.length > 0) {
+        const mappedChapters = dbChapters.map(ch => ({
           chapter: ch.chapterName,
           chapterName: ch.chapterName,
           chapterAbout: ch.chapterAbout,
@@ -71,8 +70,7 @@ const CourseLayout = ({ params }) => {
           viewCount: ch.viewCount,
           likeCount: ch.likeCount,
           commentCount: ch.commentCount,
-          chapterId: ch.chapterId,
-          position: ch.position
+          chapterId: ch.chapterId
         }));
         setChapterVideoCache(prev => ({
           ...prev,
@@ -144,22 +142,23 @@ const CourseLayout = ({ params }) => {
   const saveChaptersToDB = async (courseIdParam, originalChapters, generatedChapters) => {
     try {
       // First delete any existing chapters for this course
-      await db.delete(Chapters).where(eq(Chapters.courseId, courseIdParam));
+      await db.delete(Chapters).where(eq(Chapters.courseId, courseIdParam));    
 
       const updatedChapters = []
 
       // Insert new chapters
-      for (let index = 0; index < generatedChapters.length; index++) {
-        const chapter = generatedChapters[index];
+      const insertPromises = generatedChapters.map(async (chapter, index) => {  
         const originalChapter = originalChapters[index];
-        const chapterName = chapter.chapter || chapter.chapter_name || originalChapter?.name || originalChapter?.chapter_name || `Chapter ${index + 1}`;
+        const chapterName = chapter.chapter || chapter.chapter_name || originalChapter?.name || originalChapter?.chapter_name || `Chapter ${index + 1}`;        
         const chapterAbout = chapter.chapter_about || originalChapter?.about || originalChapter?.chapter_about || '';
         const chapterDuration = chapter.chapter_duration || originalChapter?.duration || originalChapter?.chapter_duration || '';
-        
+
         const chapterId = uuidv4();
-        
+
         await db.insert(Chapters).values({
           courseId: courseIdParam,
+          index: index + 1, // 1-based index
+          position: index, // 0-based position
           chapterId,
           chapterName,
           chapterAbout,
@@ -178,19 +177,17 @@ const CourseLayout = ({ params }) => {
           viewCount: chapter.viewCount || null,
           likeCount: chapter.likeCount || null,
           commentCount: chapter.commentCount || null,
-          position: index
         });
-        
+
         updatedChapters.push({
           ...chapter,
           chapterId,
-          chapterName,
-          chapterAbout,
-          chapterDuration,
+          index: index + 1,
           position: index
         })
-      }
+      });
 
+      await Promise.all(insertPromises);
       console.log('All chapters saved to database successfully!');
       return updatedChapters;
     } catch (error) {
@@ -716,7 +713,7 @@ Chapter duration: ${chapterDuration}`;
       <h2 className="font-bold text-center text-2xl">Course Layout</h2>
       
       {/* Basic Info */}
-      <CourseBasicInfo course={course} refreshData={()=>getCourse()} chapterVideoCache={chapterVideoCache} courseId={courseId}/>
+      <CourseBasicInfo course={course} refreshData={()=>getCourse()}/>
       
       {/* Generation Progress */}
       {isGenerating && (
@@ -749,11 +746,10 @@ Chapter duration: ${chapterDuration}`;
         onRetryFailed={handleRetryFailedChapters}
         isGenerating={isGenerating} 
         hasFailedChapters={chapterStatuses.some(s => s === 'failed')}
-        isOnDashboard={course?.isOnDashboard || false}
       />
       
       {/* List of Lesson */}
-      <ChapterList course={course} chapterVideoCache={chapterVideoCache} courseId={courseId} userId={user?.primaryEmailAddress?.emailAddress} refreshData={()=>getCourse()} />
+      <ChapterList course={course} chapterVideoCache={chapterVideoCache} courseId={courseId} />
     </div>
   )
 }
