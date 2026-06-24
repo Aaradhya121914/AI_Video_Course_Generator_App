@@ -47,45 +47,6 @@ const CourseLayout = ({ params }) => {
     }
   }
   
-  // const getChaptersFromDB = async (courseIdParam) => {
-  //   try {
-  //     const dbChapters = await db.select().from(Chapters).where(eq(Chapters.courseId, courseIdParam));
-  //     const sortedChapters = dbChapters.sort((a, b) => (a.index || a.position || 0) - (b.index || b.position || 0));
-  //     if (sortedChapters.length > 0) {
-  //       const mappedChapters = sortedChapters.map(ch => ({
-  //         chapter: ch.chapterName,
-  //         chapterName: ch.chapterName,
-  //         chapterAbout: ch.chapterAbout,
-  //         chapterDuration: ch.chapterDuration,
-  //         chapterContent: ch.chapterContent?.content || ch.chapterContent,
-  //         searchQuery: ch.searchQuery,
-  //         videoId: ch.videoId,
-  //         videoUrl: ch.videoUrl,
-  //         videoTitle: ch.videoTitle,
-  //         videoDuration: ch.videoDuration,
-  //         channelName: ch.channelName,
-  //         channelId: ch.channelId,
-  //         publishedAt: ch.publishedAt,
-  //         description: ch.description,
-  //         thumbnails: ch.thumbnails,
-  //         viewCount: ch.viewCount,
-  //         likeCount: ch.likeCount,
-  //         commentCount: ch.commentCount,
-  //         chapterId: ch.chapterId,
-  //         index: ch.index || null,
-  //         position: ch.position || null
-  //       }));
-  //       setChapterVideoCache(prev => ({
-  //         ...prev,
-  //         [courseIdParam]: mappedChapters
-  //       }));
-  //       console.log('Loaded chapters from DB:', mappedChapters);
-  //     }
-  //   } catch (err) {
-  //     console.error('getChaptersFromDB error:', err);
-  //   }
-  // };
-
   const getChaptersFromDB = async (courseIdParam) => {
   try {
     const dbChapters = await db.select().from(Chapters).where(eq(Chapters.courseId, courseIdParam));
@@ -287,10 +248,13 @@ const CourseLayout = ({ params }) => {
     }
 
     if (!hasVideoIncluded(course)) {
-      if (chapterVideoCache[course.courseId]) {
-        console.log('Chapter Content (No Video, All Null):', chapterVideoCache[course.courseId]);
-        return;
-      }
+  const cachedChapters = chapterVideoCache[course.courseId] || [];
+  // Only skip if we have actual generated content (not just fallback chapters)
+  const hasActualContent = cachedChapters.some(ch => ch.chapterId || ch.chapterContent || ch.videoId);
+  if (hasActualContent) {
+    console.log('Chapter Content (No Video, All Null):', chapterVideoCache[course.courseId]);
+    return;
+  }
 
       setIsGenerating(true);
       setGenerationProgress({ current: 0, total: chapters.length });
@@ -451,7 +415,10 @@ Chapter duration: ${chapterDuration}`;
       return;
     }
 
-    if (chapterVideoCache[course.courseId] && chapterContentCache[course.courseId]) {
+    const cachedChapters = chapterVideoCache[course.courseId] || [];
+const hasActualContent = cachedChapters.some(ch => ch.chapterId || ch.chapterContent || ch.videoId);
+const cachedContent = chapterContentCache[course.courseId] || [];
+if (hasActualContent && cachedContent.length > 0) {
       console.log('Using cached chapter video and content data!');
       console.log('Chapter Videos:', chapterVideoCache[course.courseId]);
       console.log('Chapter Content:', chapterContentCache[course.courseId]);
