@@ -737,7 +737,7 @@ Chapter duration: ${chapterDuration}`;
       <h2 className="font-bold text-center text-2xl">Course Layout</h2>
       
       {/* Basic Info */}
-      {/* <CourseBasicInfo course={course} refreshData={()=>getCourse()}/> */}
+     
       <CourseBasicInfo 
   course={course} 
   refreshData={()=>getCourse()} 

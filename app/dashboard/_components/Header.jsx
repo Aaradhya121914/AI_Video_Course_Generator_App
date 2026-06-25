@@ -11,7 +11,7 @@ const Header = ({ isMobileSidebarOpen, setIsMobileSidebarOpen }) => {
     <div className="flex justify-between items-center p-5 shadow-sm relative">
       {/* Mobile Menu Button */}
       <button
-        className="md:hidden text-2xl"
+        className="md:hidden text-2xl cursor-pointer"
         onClick={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
         aria-label="Toggle Sidebar"
       >
@@ -22,9 +22,11 @@ const Header = ({ isMobileSidebarOpen, setIsMobileSidebarOpen }) => {
         <Image src={"/Coursify.svg"} width={40} height={40} alt="logo" className="cursor-pointer"/>
       </Link>
       
+      <Link href="/dashboard">
       <div className="hidden md:block">
         <Image src={"/Coursify.svg"} width={40} height={40} alt="logo" className="cursor-pointer"/>
       </div>
+      </Link>
       
       <UserButton />
     </div>

@@ -1,4 +1,3 @@
-
 'use client';
 import React, { useState } from 'react';
 import SiderBar from './_components/SideBar';
@@ -11,7 +10,7 @@ const DashboardLayout = ({ children }) => {
     <div>
       {/* Desktop Sidebar (fixed, always visible on md+) */}
       <div className="md:w-64 hidden md:block">
-        <SiderBar />
+        <SiderBar setIsMobileSidebarOpen={setIsMobileSidebarOpen} />
       </div>
 
       {/* Mobile Sidebar Overlay  */}
@@ -24,7 +23,7 @@ const DashboardLayout = ({ children }) => {
             className="fixed left-0 top-0 h-full w-64 bg-white z-50"
             onClick={(e) => e.stopPropagation()}
           >
-            <SiderBar />
+            <SiderBar setIsMobileSidebarOpen={setIsMobileSidebarOpen} />
             {/* Mobile Close Button */}
             <button
               className="absolute top-4 right-4 text-2xl md:hidden"
