@@ -1,16 +1,17 @@
-"use client"
-import React, { useEffect, useState } from 'react'
-import { db } from '../../../configs/db'
-import { CourseList, Chapters } from '../../../configs/Schema'
-import { useUser } from '@clerk/nextjs'
-import { and, eq } from 'drizzle-orm';
-import CourseBasicInfo from './_components/CourseBasicInfo';
-import CourseDetail from './_components/CourseDetail';
-import ChapterList from './_components/ChapterList';  
-import service from '../../../configs/Service';
-import { parseModelTextToJson } from '../../../lib/normalizeCourse';
-import { Progress } from '@/components/ui/progress';
-import { v4 as uuidv4 } from 'uuid';
+"use client";
+import React, { useEffect, useState } from "react";
+import { db } from "../../../configs/db";
+import { CourseList, Chapters } from "../../../configs/Schema";
+import { useUser } from "@clerk/nextjs";
+import { and, eq } from "drizzle-orm";
+import CourseBasicInfo from "./_components/CourseBasicInfo";
+import CourseDetail from "./_components/CourseDetail";
+import ChapterList from "./_components/ChapterList";
+import service from "../../../configs/Service";
+import { parseModelTextToJson } from "../../../lib/normalizeCourse";
+import { Progress } from "@/components/ui/progress";
+import { v4 as uuidv4 } from "uuid";
+import { useCredits } from '../../_context/CreditsContext';
 
 const CourseLayout = ({ params }) => {
   const resolvedParams = React.use(params);
@@ -20,9 +21,14 @@ const CourseLayout = ({ params }) => {
   const [chapterVideoCache, setChapterVideoCache] = useState({});
   const [chapterContentCache, setChapterContentCache] = useState({});
   const [isGenerating, setIsGenerating] = useState(false);
-  const [generationProgress, setGenerationProgress] = useState({ current: 0, total: 0 });
-  const [currentChapterName, setCurrentChapterName] = useState('');
+  const [generationProgress, setGenerationProgress] = useState({
+    current: 0,
+    total: 0,
+  });
+  const [currentChapterName, setCurrentChapterName] = useState("");
   const [chapterStatuses, setChapterStatuses] = useState([]);
+  const { currentCredits, triggerRefresh } = useCredits();
+  
 
   useEffect(() => {
     if (courseId && user?.primaryEmailAddress?.emailAddress) {
@@ -32,109 +38,133 @@ const CourseLayout = ({ params }) => {
 
   const getCourse = async () => {
     try {
-      const result = await db.select().from(CourseList).where(and(
-        eq(CourseList.courseId, courseId),
-        eq(CourseList.createdBy, user?.primaryEmailAddress?.emailAddress)
-      ));
+      const result = await db
+        .select()
+        .from(CourseList)
+        .where(
+          and(
+            eq(CourseList.courseId, courseId),
+            eq(CourseList.createdBy, user?.primaryEmailAddress?.emailAddress),
+          ),
+        );
       setCourse(result[0]);
-      console.log('Course Details: ', result);
-      
+      console.log("Course Details: ", result);
+
       if (result[0]) {
         await getChaptersFromDB(courseId);
       }
     } catch (err) {
-      console.error('getCourse error:', err);
+      console.error("getCourse error:", err);
     }
-  }
-  
+  };
+
+
   const getChaptersFromDB = async (courseIdParam) => {
-  try {
-    const dbChapters = await db.select().from(Chapters).where(eq(Chapters.courseId, courseIdParam));
-    const sortedChapters = dbChapters.sort((a, b) => (a.index || a.position || 0) - (b.index || b.position || 0));
-    let chaptersToUse = [];
+    try {
+      const dbChapters = await db
+        .select()
+        .from(Chapters)
+        .where(eq(Chapters.courseId, courseIdParam));
+      const sortedChapters = dbChapters.sort(
+        (a, b) => (a.index || a.position || 0) - (b.index || b.position || 0),
+      );
+      let chaptersToUse = [];
 
-    if (sortedChapters.length > 0) {
-      chaptersToUse = sortedChapters.map(ch => ({
-        chapter: ch.chapterName,
-        chapterName: ch.chapterName,
-        chapterAbout: ch.chapterAbout,
-        chapterDuration: ch.chapterDuration,
-        chapterContent: ch.chapterContent?.content || ch.chapterContent,
-        searchQuery: ch.searchQuery,
-        videoId: ch.videoId,
-        videoUrl: ch.videoUrl,
-        videoTitle: ch.videoTitle,
-        videoDuration: ch.videoDuration,
-        channelName: ch.channelName,
-        channelId: ch.channelId,
-        publishedAt: ch.publishedAt,
-        description: ch.description,
-        thumbnails: ch.thumbnails,
-        viewCount: ch.viewCount,
-        likeCount: ch.likeCount,
-        commentCount: ch.commentCount,
-        chapterId: ch.chapterId,
-        index: ch.index || null,
-        position: ch.position || null
+      if (sortedChapters.length > 0) {
+        chaptersToUse = sortedChapters.map((ch) => ({
+          chapter: ch.chapterName,
+          chapterName: ch.chapterName,
+          chapterAbout: ch.chapterAbout,
+          chapterDuration: ch.chapterDuration,
+          chapterContent: ch.chapterContent?.content || ch.chapterContent,
+          searchQuery: ch.searchQuery,
+          videoId: ch.videoId,
+          videoUrl: ch.videoUrl,
+          videoTitle: ch.videoTitle,
+          videoDuration: ch.videoDuration,
+          channelName: ch.channelName,
+          channelId: ch.channelId,
+          publishedAt: ch.publishedAt,
+          description: ch.description,
+          thumbnails: ch.thumbnails,
+          viewCount: ch.viewCount,
+          likeCount: ch.likeCount,
+          commentCount: ch.commentCount,
+          chapterId: ch.chapterId,
+          index: ch.index || null,
+          position: ch.position || null,
+        }));
+      } else {
+        // Fallback to course.courseOutput chapters if no DB chapters!
+        const outputChapters =
+          course?.courseOutput?.chapters ||
+          course?.courseOutput?.course?.chapters ||
+          [];
+        chaptersToUse = outputChapters.map((ch, idx) => ({
+          chapter: ch.name || ch.chapter_name || `Chapter ${idx + 1}`,
+          chapterName: ch.name || ch.chapter_name || `Chapter ${idx + 1}`,
+          chapterAbout: ch.about || ch.chapter_about || "",
+          chapterDuration: ch.duration || ch.chapter_duration || "",
+          index: idx + 1,
+          position: idx,
+          chapterId: null, // No chapterId yet until we generate content
+        }));
+      }
+
+      setChapterVideoCache((prev) => ({
+        ...prev,
+        [courseIdParam]: chaptersToUse,
       }));
-    } else {
-      // Fallback to course.courseOutput chapters if no DB chapters!
-      const outputChapters = course?.courseOutput?.chapters || course?.courseOutput?.course?.chapters || [];
-      chaptersToUse = outputChapters.map((ch, idx) => ({
-        chapter: ch.name || ch.chapter_name || `Chapter ${idx + 1}`,
-        chapterName: ch.name || ch.chapter_name || `Chapter ${idx + 1}`,
-        chapterAbout: ch.about || ch.chapter_about || '',
-        chapterDuration: ch.duration || ch.chapter_duration || '',
-        index: idx + 1,
-        position: idx,
-        chapterId: null // No chapterId yet until we generate content
-      }));
+      console.log("Chapters loaded:", chaptersToUse);
+    } catch (err) {
+      console.error("getChaptersFromDB error:", err);
     }
-
-    setChapterVideoCache(prev => ({
-      ...prev,
-      [courseIdParam]: chaptersToUse
-    }));
-    console.log('Chapters loaded:', chaptersToUse);
-  } catch (err) {
-    console.error('getChaptersFromDB error:', err);
-  }
-};
+  };
 
   const hasVideoIncluded = (course) => {
     if (!course) return false;
     const outputCourse = course?.courseOutput?.course;
-    if (typeof outputCourse?.video_lectures === 'boolean') {
+    if (typeof outputCourse?.video_lectures === "boolean") {
       return outputCourse.video_lectures;
     }
-    return String(course?.includeVideo || outputCourse?.video_lectures || '').toLowerCase() === 'yes';
+    return (
+      String(
+        course?.includeVideo || outputCourse?.video_lectures || "",
+      ).toLowerCase() === "yes"
+    );
   };
 
   const isQuotaExceededError = (error) => {
-    const message = String(error?.message || '').toLowerCase();
-    return message.includes('[429') || message.includes('quota exceeded');
+    const message = String(error?.message || "").toLowerCase();
+    return message.includes("[429") || message.includes("quota exceeded");
   };
 
   const getRetryDelaySeconds = (error) => {
-    const match = String(error?.message || '').match(/retry in\s+([\d.]+)s/i);
+    const match = String(error?.message || "").match(/retry in\s+([\d.]+)s/i);
     return match ? Math.ceil(Number(match[1])) : null;
   };
 
-  const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+  const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-  const generateChapterWithRetry = async (prompt, maxRetries = 5, minContentLength = 500) => {
+  const generateChapterWithRetry = async (
+    prompt,
+    maxRetries = 5,
+    minContentLength = 500,
+  ) => {
     for (let attempt = 0; attempt < maxRetries; attempt++) {
       try {
         const text = await generateChapterContentFromApi(prompt);
         const parsed = parseModelTextToJson(text) || {};
-        
-        const content = parsed?.chapter_content || '';
+
+        const content = parsed?.chapter_content || "";
         if (content.length < minContentLength && attempt < maxRetries - 1) {
-          console.log(`Generated content too short (${content.length} chars), retrying (attempt ${attempt + 1}/${maxRetries})...`);
+          console.log(
+            `Generated content too short (${content.length} chars), retrying (attempt ${attempt + 1}/${maxRetries})...`,
+          );
           await sleep(Math.pow(2, attempt) * 1000); // Wait before retrying
           continue;
         }
-        
+
         return text;
       } catch (error) {
         if (isQuotaExceededError(error) && attempt < maxRetries - 1) {
@@ -144,9 +174,11 @@ const CourseLayout = ({ params }) => {
           } else {
             retryDelay *= 1000; // Convert seconds to ms
           }
-          
-          console.log(`Quota exceeded, retrying in ${retryDelay / 1000}s (attempt ${attempt + 1}/${maxRetries})...`);
-          
+
+          console.log(
+            `Quota exceeded, retrying in ${retryDelay / 1000}s (attempt ${attempt + 1}/${maxRetries})...`,
+          );
+
           await sleep(retryDelay);
           continue;
         }
@@ -154,22 +186,39 @@ const CourseLayout = ({ params }) => {
       }
     }
     // If we're out of retries, return whatever we have
-    return '';
+    return "";
   };
 
-  const saveChaptersToDB = async (courseIdParam, originalChapters, generatedChapters) => {
+  const saveChaptersToDB = async (
+    courseIdParam,
+    originalChapters,
+    generatedChapters,
+  ) => {
     try {
       // First delete any existing chapters for this course
-      await db.delete(Chapters).where(eq(Chapters.courseId, courseIdParam));    
+      await db.delete(Chapters).where(eq(Chapters.courseId, courseIdParam));
 
-      const updatedChapters = []
+      const updatedChapters = [];
 
       // Insert new chapters
-      const insertPromises = generatedChapters.map(async (chapter, index) => {  
+      const insertPromises = generatedChapters.map(async (chapter, index) => {
         const originalChapter = originalChapters[index];
-        const chapterName = chapter.chapter || chapter.chapter_name || originalChapter?.name || originalChapter?.chapter_name || `Chapter ${index + 1}`;        
-        const chapterAbout = chapter.chapter_about || originalChapter?.about || originalChapter?.chapter_about || '';
-        const chapterDuration = chapter.chapter_duration || originalChapter?.duration || originalChapter?.chapter_duration || '';
+        const chapterName =
+          chapter.chapter ||
+          chapter.chapter_name ||
+          originalChapter?.name ||
+          originalChapter?.chapter_name ||
+          `Chapter ${index + 1}`;
+        const chapterAbout =
+          chapter.chapter_about ||
+          originalChapter?.about ||
+          originalChapter?.chapter_about ||
+          "";
+        const chapterDuration =
+          chapter.chapter_duration ||
+          originalChapter?.duration ||
+          originalChapter?.chapter_duration ||
+          "";
 
         const chapterId = uuidv4();
 
@@ -181,7 +230,9 @@ const CourseLayout = ({ params }) => {
           chapterName,
           chapterAbout,
           chapterDuration,
-          chapterContent: chapter.chapter_content ? { content: chapter.chapter_content } : null,
+          chapterContent: chapter.chapter_content
+            ? { content: chapter.chapter_content }
+            : null,
           searchQuery: chapter.searchQuery || null,
           videoId: chapter.videoId || null,
           videoUrl: chapter.videoUrl || null,
@@ -201,24 +252,24 @@ const CourseLayout = ({ params }) => {
           ...chapter,
           chapterId,
           index: index + 1,
-          position: index
-        })
+          position: index,
+        });
       });
 
       await Promise.all(insertPromises);
-      console.log('All chapters saved to database successfully!');
+      console.log("All chapters saved to database successfully!");
       return updatedChapters;
     } catch (error) {
-      console.error('Error saving chapters to DB:', error);
+      console.error("Error saving chapters to DB:", error);
       return generatedChapters;
     }
   };
 
   const generateChapterContentFromApi = async (prompt) => {
-    const response = await fetch('/api/generate-chapter-content', {
-      method: 'POST',
+    const response = await fetch("/api/generate-chapter-content", {
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({ prompt }),
     });
@@ -226,14 +277,16 @@ const CourseLayout = ({ params }) => {
     const data = await response.json().catch(() => ({}));
 
     if (!response.ok) {
-      const error = new Error(data?.error || 'Failed to generate chapter content.');
+      const error = new Error(
+        data?.error || "Failed to generate chapter content.",
+      );
       if (data?.retryDelaySeconds) {
         error.retryDelaySeconds = data.retryDelaySeconds;
       }
       throw error;
     }
 
-    return data?.text || '';
+    return data?.text || "";
   };
 
   const handleGenerateCourseContent = async () => {
@@ -241,41 +294,51 @@ const CourseLayout = ({ params }) => {
       return;
     }
 
-    const chapters = course?.courseOutput?.course?.chapters || course?.courseOutput?.chapters || [];
+    const chapters =
+      course?.courseOutput?.course?.chapters ||
+      course?.courseOutput?.chapters ||
+      [];
     if (chapters.length === 0) {
-      console.warn('No chapters found to generate content for.');
+      console.warn("No chapters found to generate content for.");
       return;
     }
 
     if (!hasVideoIncluded(course)) {
-  const cachedChapters = chapterVideoCache[course.courseId] || [];
-  // Only skip if we have actual generated content (not just fallback chapters)
-  const hasActualContent = cachedChapters.some(ch => ch.chapterId || ch.chapterContent || ch.videoId);
-  if (hasActualContent) {
-    console.log('Chapter Content (No Video, All Null):', chapterVideoCache[course.courseId]);
-    return;
-  }
+      const cachedChapters = chapterVideoCache[course.courseId] || [];
+      // Only skip if we have actual generated content (not just fallback chapters)
+      const hasActualContent = cachedChapters.some(
+        (ch) => ch.chapterId || ch.chapterContent || ch.videoId,
+      );
+      if (hasActualContent) {
+        console.log(
+          "Chapter Content (No Video, All Null):",
+          chapterVideoCache[course.courseId],
+        );
+        return;
+      }
 
       setIsGenerating(true);
       setGenerationProgress({ current: 0, total: chapters.length });
-      setChapterStatuses(chapters.map(() => 'pending')); // Initialize all as pending
+      setChapterStatuses(chapters.map(() => "pending")); // Initialize all as pending
 
       try {
         const chapterContent = [];
 
         for (let i = 0; i < chapters.length; i++) {
           const chapter = chapters[i];
-          const chapterName = chapter?.name || chapter?.chapter_name || 'Chapter';
-          const chapterAbout = chapter?.about || chapter?.chapter_about || '';
-          const chapterDuration = chapter?.duration || chapter?.chapter_duration || '';
+          const chapterName =
+            chapter?.name || chapter?.chapter_name || "Chapter";
+          const chapterAbout = chapter?.about || chapter?.chapter_about || "";
+          const chapterDuration =
+            chapter?.duration || chapter?.chapter_duration || "";
 
           setCurrentChapterName(chapterName);
-          setChapterStatuses(prev => {
+          setChapterStatuses((prev) => {
             const newStatuses = [...prev];
-            newStatuses[i] = 'generating';
+            newStatuses[i] = "generating";
             return newStatuses;
           });
-          
+
           const prompt = `You are an expert educational content writer and long-form blog author.
 
 Write a very detailed and comprehensive chapter explanation for a course.
@@ -312,8 +375,8 @@ Return JSON in exactly this format:
   "chapter_content": "very long detailed blog-style explanation of the chapter topic"
 }
 
-Course name: ${course?.courseOutput?.course?.name || course?.name || 'Course'}
-Course description: ${course?.courseOutput?.course?.description || course?.courseOutput?.description || ''}
+Course name: ${course?.courseOutput?.course?.name || course?.name || "Course"}
+Course description: ${course?.courseOutput?.course?.description || course?.courseOutput?.description || ""}
 Chapter name: ${chapterName}
 Chapter about: ${chapterAbout}
 Chapter duration: ${chapterDuration}`;
@@ -323,22 +386,22 @@ Chapter duration: ${chapterDuration}`;
             const parsed = parseModelTextToJson(text) || {};
 
             // If JSON parsing failed but we got raw text, use raw text as chapter_content
-            let content = parsed?.chapter_content || '';
+            let content = parsed?.chapter_content || "";
             if (!content && parsed?.rawText && parsed.rawText.length > 100) {
               content = parsed.rawText;
             }
-            
+
             // If content is still too short, keep going but track failed
             if (content.length < 200) {
-              setChapterStatuses(prev => {
+              setChapterStatuses((prev) => {
                 const newStatuses = [...prev];
-                newStatuses[i] = 'failed';
+                newStatuses[i] = "failed";
                 return newStatuses;
               });
             } else {
-              setChapterStatuses(prev => {
+              setChapterStatuses((prev) => {
                 const newStatuses = [...prev];
-                newStatuses[i] = 'success';
+                newStatuses[i] = "success";
                 return newStatuses;
               });
             }
@@ -367,7 +430,10 @@ Chapter duration: ${chapterDuration}`;
 
             setGenerationProgress({ current: i + 1, total: chapters.length });
           } catch (error) {
-            console.warn('Failed to generate chapter:', error?.message || error);
+            console.warn(
+              "Failed to generate chapter:",
+              error?.message || error,
+            );
             // Still push the chapter, mark failed
             chapterContent.push({
               chapter: chapterName,
@@ -384,30 +450,53 @@ Chapter duration: ${chapterDuration}`;
               viewCount: null,
               likeCount: null,
               commentCount: null,
-              chapter_content: '',
+              chapter_content: "",
               chapter_name: chapterName,
               chapter_about: chapterAbout,
               chapter_duration: chapterDuration,
             });
-            setChapterStatuses(prev => {
+            setChapterStatuses((prev) => {
               const newStatuses = [...prev];
-              newStatuses[i] = 'failed';
+              newStatuses[i] = "failed";
               return newStatuses;
             });
             setGenerationProgress({ current: i + 1, total: chapters.length });
           }
         }
 
-          const updatedChapters = await saveChaptersToDB(course.courseId, chapters, chapterContent);
-          const sortedUpdatedChapters = updatedChapters.sort((a, b) => (a.index || 0) - (b.index || 0));
-          setChapterVideoCache((prev) => ({
-            ...prev,
-            [course.courseId]: sortedUpdatedChapters,
-          }));
+        const updatedChapters = await saveChaptersToDB(
+          course.courseId,
+          chapters,
+          chapterContent,
+        );
+        const sortedUpdatedChapters = updatedChapters.sort(
+          (a, b) => (a.index || 0) - (b.index || 0),
+        );
+        setChapterVideoCache((prev) => ({
+          ...prev,
+          [course.courseId]: sortedUpdatedChapters,
+        }));
 
-        console.log('Chapter Videos (No Video, All Null):', updatedChapters);
+        // Subtract credits now!
+        if (user?.primaryEmailAddress?.emailAddress) {
+          await fetch('/api/update-user-credits', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              email: user.primaryEmailAddress.emailAddress,
+              creditsToSubtract: 20
+            }),
+          });
+          // Refresh credits to update header
+          triggerRefresh();
+        }
+
+        console.log("Chapter Videos (No Video, All Null):", updatedChapters);
       } catch (error) {
-        console.warn('Failed to generate chapter content:', error?.message || error);
+        console.warn(
+          "Failed to generate chapter content:",
+          error?.message || error,
+        );
       } finally {
         setIsGenerating(false);
       }
@@ -416,40 +505,45 @@ Chapter duration: ${chapterDuration}`;
     }
 
     const cachedChapters = chapterVideoCache[course.courseId] || [];
-const hasActualContent = cachedChapters.some(ch => ch.chapterId || ch.chapterContent || ch.videoId);
-const cachedContent = chapterContentCache[course.courseId] || [];
-if (hasActualContent && cachedContent.length > 0) {
-      console.log('Using cached chapter video and content data!');
-      console.log('Chapter Videos:', chapterVideoCache[course.courseId]);
-      console.log('Chapter Content:', chapterContentCache[course.courseId]);
+    const hasActualContent = cachedChapters.some(
+      (ch) => ch.chapterId || ch.chapterContent || ch.videoId,
+    );
+    const cachedContent = chapterContentCache[course.courseId] || [];
+    if (hasActualContent && cachedContent.length > 0) {
+      console.log("Using cached chapter video and content data!");
+      console.log("Chapter Videos:", chapterVideoCache[course.courseId]);
+      console.log("Chapter Content:", chapterContentCache[course.courseId]);
       return;
     }
 
     setIsGenerating(true);
     setGenerationProgress({ current: 0, total: chapters.length * 2 }); // Since we do two things per chapter
-    setChapterStatuses(chapters.map(() => 'pending'));
+    setChapterStatuses(chapters.map(() => "pending"));
 
     try {
       // First: get all videos
-      const chapterTitles = chapters.map((chapter) => chapter?.name || chapter?.chapter_name || 'Chapter');
+      const chapterTitles = chapters.map(
+        (chapter) => chapter?.name || chapter?.chapter_name || "Chapter",
+      );
       const videos = await service.getVideosForChapters(chapterTitles);
-      
+
       // Now: generate content for each chapter
       const chapterContent = [];
 
       for (let i = 0; i < chapters.length; i++) {
         const chapter = chapters[i];
-        const chapterName = chapter?.name || chapter?.chapter_name || 'Chapter';
-        const chapterAbout = chapter?.about || chapter?.chapter_about || '';
-        const chapterDuration = chapter?.duration || chapter?.chapter_duration || '';
+        const chapterName = chapter?.name || chapter?.chapter_name || "Chapter";
+        const chapterAbout = chapter?.about || chapter?.chapter_about || "";
+        const chapterDuration =
+          chapter?.duration || chapter?.chapter_duration || "";
 
         setCurrentChapterName(chapterName);
-        setChapterStatuses(prev => {
+        setChapterStatuses((prev) => {
           const newStatuses = [...prev];
-          newStatuses[i] = 'generating';
+          newStatuses[i] = "generating";
           return newStatuses;
         });
-        
+
         const prompt = `You are an expert educational content writer and long-form blog author.
 
 Write a very detailed and comprehensive chapter explanation for a course.
@@ -486,8 +580,8 @@ Return JSON in exactly this format:
   "chapter_content": "very long detailed blog-style explanation of the chapter topic"
 }
 
-Course name: ${course?.courseOutput?.course?.name || course?.name || 'Course'}
-Course description: ${course?.courseOutput?.course?.description || course?.courseOutput?.description || ''}
+Course name: ${course?.courseOutput?.course?.name || course?.name || "Course"}
+Course description: ${course?.courseOutput?.course?.description || course?.courseOutput?.description || ""}
 Chapter name: ${chapterName}
 Chapter about: ${chapterAbout}
 Chapter duration: ${chapterDuration}`;
@@ -496,25 +590,25 @@ Chapter duration: ${chapterDuration}`;
           const text = await generateChapterWithRetry(prompt);
           const parsed = parseModelTextToJson(text) || {};
 
-          let content = parsed?.chapter_content || '';
+          let content = parsed?.chapter_content || "";
           if (!content && parsed?.rawText && parsed.rawText.length > 100) {
             content = parsed.rawText;
           }
-          
+
           if (content.length < 200) {
-            setChapterStatuses(prev => {
+            setChapterStatuses((prev) => {
               const newStatuses = [...prev];
-              newStatuses[i] = 'failed';
+              newStatuses[i] = "failed";
               return newStatuses;
             });
           } else {
-            setChapterStatuses(prev => {
+            setChapterStatuses((prev) => {
               const newStatuses = [...prev];
-              newStatuses[i] = 'success';
+              newStatuses[i] = "success";
               return newStatuses;
             });
           }
-          
+
           chapterContent.push({
             chapter_name: chapterName,
             chapter_about: chapterAbout,
@@ -522,69 +616,101 @@ Chapter duration: ${chapterDuration}`;
             chapter_content: content,
           });
         } catch (error) {
-          console.warn('Failed to generate chapter:', error?.message || error);
+          console.warn("Failed to generate chapter:", error?.message || error);
           chapterContent.push({
             chapter_name: chapterName,
             chapter_about: chapterAbout,
             chapter_duration: chapterDuration,
-            chapter_content: '',
+            chapter_content: "",
           });
-          setChapterStatuses(prev => {
+          setChapterStatuses((prev) => {
             const newStatuses = [...prev];
-            newStatuses[i] = 'failed';
+            newStatuses[i] = "failed";
             return newStatuses;
           });
         }
-        
-        setGenerationProgress({ current: (i + 1) * 2, total: chapters.length * 2 });
+
+        setGenerationProgress({
+          current: (i + 1) * 2,
+          total: chapters.length * 2,
+        });
       }
 
       // Combine both videos and content!
-      const chapterVideosAndContent = chapterTitles.map((chapterName, index) => {
-        const video = videos?.[index] || {};
-        const content = chapterContent?.[index] || {};
-        const originalChapter = chapters[index];
-        const chapterAbout = originalChapter?.about || originalChapter?.chapter_about || '';
-        const chapterDuration = originalChapter?.duration || originalChapter?.chapter_duration || '';
+      const chapterVideosAndContent = chapterTitles.map(
+        (chapterName, index) => {
+          const video = videos?.[index] || {};
+          const content = chapterContent?.[index] || {};
+          const originalChapter = chapters[index];
+          const chapterAbout =
+            originalChapter?.about || originalChapter?.chapter_about || "";
+          const chapterDuration =
+            originalChapter?.duration ||
+            originalChapter?.chapter_duration ||
+            "";
 
-        return {
-          chapter: chapterName,
-          searchQuery: video.searchQuery || chapterName,
-          videoId: video.videoId || null,
-          videoUrl: video.videoUrl || null,
-          videoTitle: video.title || null,
-          videoDuration: video.duration || null,
-          channelName: video.channelName || null,
-          channelId: video.channelId || null,
-          publishedAt: video.publishedAt || null,
-          description: video.description || null,
-          thumbnails: video.thumbnails || null,
-          viewCount: video.viewCount || null,
-          likeCount: video.likeCount || null,
-          commentCount: video.commentCount || null,
-          chapter_content: content.chapter_content || '',
-          chapter_name: chapterName,
-          chapter_about: chapterAbout,
-          chapter_duration: chapterDuration,
-        };
-      });
+          return {
+            chapter: chapterName,
+            searchQuery: video.searchQuery || chapterName,
+            videoId: video.videoId || null,
+            videoUrl: video.videoUrl || null,
+            videoTitle: video.title || null,
+            videoDuration: video.duration || null,
+            channelName: video.channelName || null,
+            channelId: video.channelId || null,
+            publishedAt: video.publishedAt || null,
+            description: video.description || null,
+            thumbnails: video.thumbnails || null,
+            viewCount: video.viewCount || null,
+            likeCount: video.likeCount || null,
+            commentCount: video.commentCount || null,
+            chapter_content: content.chapter_content || "",
+            chapter_name: chapterName,
+            chapter_about: chapterAbout,
+            chapter_duration: chapterDuration,
+          };
+        },
+      );
 
-      console.log('Generated Chapter Video AND Content Data:', chapterVideosAndContent);
-        
-        // Now save to DB!
-          const updatedChapters = await saveChaptersToDB(course.courseId, chapters, chapterVideosAndContent);
-          const sortedUpdatedChapters = updatedChapters.sort((a, b) => (a.index || 0) - (b.index || 0));
-          setChapterVideoCache((prev) => ({
-            ...prev,
-            [course.courseId]: sortedUpdatedChapters,
-          }));
-        
-        setChapterContentCache((prev) => ({
-          ...prev,
-          [course.courseId]: chapterContent,
-        }));
+      console.log(
+        "Generated Chapter Video AND Content Data:",
+        chapterVideosAndContent,
+      );
+
+      // Now save to DB!
+      const updatedChapters = await saveChaptersToDB(
+        course.courseId,
+        chapters,
+        chapterVideosAndContent,
+      );
+      const sortedUpdatedChapters = updatedChapters.sort(
+        (a, b) => (a.index || 0) - (b.index || 0),
+      );
+      setChapterVideoCache((prev) => ({
+        ...prev,
+        [course.courseId]: sortedUpdatedChapters,
+      }));
+
+      setChapterContentCache((prev) => ({
+        ...prev,
+        [course.courseId]: chapterContent,
+      }));
+
+            // Subtract credits now!
+      if (user?.primaryEmailAddress?.emailAddress) {
+        await fetch('/api/update-user-credits', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: user.primaryEmailAddress.emailAddress,
+            creditsToSubtract: 20
+          }),
+        });
+        // Refresh credits to update header
+        triggerRefresh();
+      }
     } catch (error) {
-      console.error('Failed to generate chapter content or video URLs:', error);
+      console.error("Failed to generate chapter content or video URLs:", error);
     } finally {
       setIsGenerating(false);
     }
@@ -593,14 +719,17 @@ Chapter duration: ${chapterDuration}`;
   const handleRetryFailedChapters = async () => {
     if (!course) return;
 
-    const chapters = course?.courseOutput?.course?.chapters || course?.courseOutput?.chapters || [];
+    const chapters =
+      course?.courseOutput?.course?.chapters ||
+      course?.courseOutput?.chapters ||
+      [];
     const cachedVideos = chapterVideoCache[course.courseId] || [];
     const failedIndices = chapterStatuses
-      .map((status, idx) => status === 'failed' ? idx : -1)
-      .filter(idx => idx !== -1);
-    
+      .map((status, idx) => (status === "failed" ? idx : -1))
+      .filter((idx) => idx !== -1);
+
     if (failedIndices.length === 0) {
-      console.log('No failed chapters to retry!');
+      console.log("No failed chapters to retry!");
       return;
     }
 
@@ -612,17 +741,18 @@ Chapter duration: ${chapterDuration}`;
       for (let i = 0; i < failedIndices.length; i++) {
         const chapterIdx = failedIndices[i];
         const chapter = chapters[chapterIdx];
-        const chapterName = chapter?.name || chapter?.chapter_name || 'Chapter';
-        const chapterAbout = chapter?.about || chapter?.chapter_about || '';
-        const chapterDuration = chapter?.duration || chapter?.chapter_duration || '';
+        const chapterName = chapter?.name || chapter?.chapter_name || "Chapter";
+        const chapterAbout = chapter?.about || chapter?.chapter_about || "";
+        const chapterDuration =
+          chapter?.duration || chapter?.chapter_duration || "";
 
         setCurrentChapterName(chapterName);
-        setChapterStatuses(prev => {
+        setChapterStatuses((prev) => {
           const newStatuses = [...prev];
-          newStatuses[chapterIdx] = 'generating';
+          newStatuses[chapterIdx] = "generating";
           return newStatuses;
         });
-        
+
         const prompt = `You are an expert educational content writer and long-form blog author.
 
 Write a very detailed and comprehensive chapter explanation for a course.
@@ -659,8 +789,8 @@ Return JSON in exactly this format:
   "chapter_content": "very long detailed blog-style explanation of the chapter topic"
 }
 
-Course name: ${course?.courseOutput?.course?.name || course?.name || 'Course'}
-Course description: ${course?.courseOutput?.course?.description || course?.courseOutput?.description || ''}
+Course name: ${course?.courseOutput?.course?.name || course?.name || "Course"}
+Course description: ${course?.courseOutput?.course?.description || course?.courseOutput?.description || ""}
 Chapter name: ${chapterName}
 Chapter about: ${chapterAbout}
 Chapter duration: ${chapterDuration}`;
@@ -668,26 +798,26 @@ Chapter duration: ${chapterDuration}`;
         try {
           const text = await generateChapterWithRetry(prompt);
           const parsed = parseModelTextToJson(text) || {};
-          
-          let content = parsed?.chapter_content || '';
+
+          let content = parsed?.chapter_content || "";
           if (!content && parsed?.rawText && parsed.rawText.length > 100) {
             content = parsed.rawText;
           }
 
           if (content.length < 200) {
-            setChapterStatuses(prev => {
+            setChapterStatuses((prev) => {
               const newStatuses = [...prev];
-              newStatuses[chapterIdx] = 'failed';
+              newStatuses[chapterIdx] = "failed";
               return newStatuses;
             });
           } else {
-            setChapterStatuses(prev => {
+            setChapterStatuses((prev) => {
               const newStatuses = [...prev];
-              newStatuses[chapterIdx] = 'success';
+              newStatuses[chapterIdx] = "success";
               return newStatuses;
             });
           }
-          
+
           newVideos[chapterIdx] = {
             ...newVideos[chapterIdx],
             chapter_content: content,
@@ -698,12 +828,18 @@ Chapter duration: ${chapterDuration}`;
       }
 
       // Save to DB after retry!
-        const updatedChapters = await saveChaptersToDB(course.courseId, chapters, newVideos);
-        const sortedUpdatedChapters = updatedChapters.sort((a, b) => (a.index || 0) - (b.index || 0));
-        setChapterVideoCache((prev) => ({
-          ...prev,
-          [course.courseId]: sortedUpdatedChapters,
-        }));
+      const updatedChapters = await saveChaptersToDB(
+        course.courseId,
+        chapters,
+        newVideos,
+      );
+      const sortedUpdatedChapters = updatedChapters.sort(
+        (a, b) => (a.index || 0) - (b.index || 0),
+      );
+      setChapterVideoCache((prev) => ({
+        ...prev,
+        [course.courseId]: sortedUpdatedChapters,
+      }));
 
       if (hasVideoIncluded(course)) {
         const oldContent = chapterContentCache[course.courseId] || [];
@@ -712,7 +848,8 @@ Chapter duration: ${chapterDuration}`;
           if (videoItem && item.chapter_name) {
             return {
               ...item,
-              chapter_content: videoItem.chapter_content || item.chapter_content,
+              chapter_content:
+                videoItem.chapter_content || item.chapter_content,
             };
           }
           return item;
@@ -721,12 +858,12 @@ Chapter duration: ${chapterDuration}`;
           ...prev,
           [course.courseId]: newContent,
         }));
-        console.log('Updated chapter video and content!');
+        console.log("Updated chapter video and content!");
       } else {
-        console.log('Chapter Videos (No Video, All Null):', updatedChapters);
+        console.log("Chapter Videos (No Video, All Null):", updatedChapters);
       }
     } catch (e) {
-      console.warn('Failed to retry chapters:', e);
+      console.warn("Failed to retry chapters:", e);
     } finally {
       setIsGenerating(false);
     }
@@ -735,61 +872,77 @@ Chapter duration: ${chapterDuration}`;
   return (
     <div className="mt-10 px-7 md:px-20 lg:px-44">
       <h2 className="font-bold text-center text-2xl">Course Layout</h2>
-      
+
       {/* Basic Info */}
-     
-      <CourseBasicInfo 
-  course={course} 
-  refreshData={()=>getCourse()} 
-  chapterVideoCache={chapterVideoCache} 
-  courseId={courseId} 
-/>
-      
+
+      <CourseBasicInfo
+        course={course}
+        refreshData={() => getCourse()}
+        chapterVideoCache={chapterVideoCache}
+        courseId={courseId}
+        currentCredits={currentCredits}
+      />
+
       {/* Generation Progress */}
       {isGenerating && (
         <div className="border p-6 rounded-xl shadow-sm mt-3">
-          <h3 className="font-medium text-lg mb-3">Generating Course Content...</h3>
+          <h3 className="font-medium text-lg mb-3">
+            Generating Course Content...
+          </h3>
           <p className="text-sm text-gray-600 mb-3">
             Currently generating: {currentChapterName}
           </p>
-          <Progress value={(generationProgress.current / generationProgress.total) * 100} className="mb-2" />
+          <Progress
+            value={
+              (generationProgress.current / generationProgress.total) * 100
+            }
+            className="mb-2"
+          />
           <p className="text-sm text-gray-600">
-            {generationProgress.current} of {generationProgress.total} chapters completed
+            {generationProgress.current} of {generationProgress.total} chapters
+            completed
           </p>
         </div>
       )}
-      
-      {/* Completion Message */}
-      {!isGenerating && generationProgress.total > 0 && generationProgress.current === generationProgress.total && (
-        <div className="border p-6 rounded-xl shadow-sm mt-3 bg-green-50">
-          <h3 className="font-medium text-lg mb-2 text-green-700">All chapters generated!</h3>
-          <p className="text-sm text-green-600 mb-3">
-            {chapterStatuses.filter(s => s === 'success').length} chapters successful, {chapterStatuses.filter(s => s === 'failed').length} failed.
-          </p>
-        </div>
-      )}
-      
-      {/* Course Detail */}
-     <CourseDetail 
-  course={course} 
-  onGenerateContent={handleGenerateCourseContent} 
-  onRetryFailed={handleRetryFailedChapters}
-  isGenerating={isGenerating} 
-  hasFailedChapters={chapterStatuses.some(s => s === 'failed')}
-  chapterVideoCache={chapterVideoCache}
-  courseId={courseId}
-/>
-      
-      {/* List of Lesson */}
-      <ChapterList 
-  course={course} 
-  chapterVideoCache={chapterVideoCache} 
-  courseId={courseId} 
-  refreshData={() => getCourse()} 
-  userId={user?.primaryEmailAddress?.emailAddress} 
-/>
-    </div>
-  )
-}
 
-export default CourseLayout
+      {/* Completion Message */}
+      {!isGenerating &&
+        generationProgress.total > 0 &&
+        generationProgress.current === generationProgress.total && (
+          <div className="border p-6 rounded-xl shadow-sm mt-3 bg-green-50">
+            <h3 className="font-medium text-lg mb-2 text-green-700">
+              All chapters generated!
+            </h3>
+            <p className="text-sm text-green-600 mb-3">
+              {chapterStatuses.filter((s) => s === "success").length} chapters
+              successful, {chapterStatuses.filter((s) => s === "failed").length}{" "}
+              failed.
+            </p>
+          </div>
+        )}
+
+      {/* Course Detail */}
+      <CourseDetail
+        course={course}
+        onGenerateContent={handleGenerateCourseContent}
+        onRetryFailed={handleRetryFailedChapters}
+        isGenerating={isGenerating}
+        hasFailedChapters={chapterStatuses.some((s) => s === "failed")}
+        chapterVideoCache={chapterVideoCache}
+        courseId={courseId}
+        currentCredits={currentCredits}
+      />
+
+      {/* List of Lesson */}
+      <ChapterList
+        course={course}
+        chapterVideoCache={chapterVideoCache}
+        courseId={courseId}
+        refreshData={() => getCourse()}
+        userId={user?.primaryEmailAddress?.emailAddress}
+      />
+    </div>
+  );
+};
+
+export default CourseLayout;

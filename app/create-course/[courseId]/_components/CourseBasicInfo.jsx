@@ -75,7 +75,7 @@ const CourseBasicInfo = ({ course, refreshData, chapterVideoCache, courseId }) =
             </Link>
           ) : (
             <Button className='mt-5 w-full cursor-pointer' disabled={uploading}>
-              {uploading ? 'Uploading...' : 'Generate Course Content First'}
+              {uploading ? 'Uploading...' : 'Generate Course Content First (20 Credits)'}
             </Button>
           )}
         </div>

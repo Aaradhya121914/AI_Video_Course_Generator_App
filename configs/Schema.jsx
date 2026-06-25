@@ -40,3 +40,9 @@ export const Chapters=pgTable("chapters",{
     commentCount:json("commentCount"),
     position:integer("position").notNull().default(0)
 })
+
+export const UserCredits = pgTable("userCredits", {
+    id: serial("id").primaryKey(),
+    email: varchar("email").notNull().unique(), 
+    credits: integer("credits").notNull().default(100), 
+})
