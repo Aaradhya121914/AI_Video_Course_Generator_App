@@ -4,11 +4,24 @@ import Image from "next/image";
 import Link from "next/link";
 import { useUser } from "@clerk/nextjs";
 import Addcourse from "./_components/Addcourse";
+import { useCredits } from "../_context/CreditsContext"; 
+import { useSearchParams } from "next/navigation"; 
 
 const Dashboard = () => {
   const { user } = useUser();
+  const { triggerRefresh } = useCredits(); 
+  const searchParams = useSearchParams(); 
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // THIS useEffect is USED TO REFRESH CREDITS ON SUCCESS
+  useEffect(() => {
+    if (searchParams.get('success') === 'true') {
+      console.log('Payment successful! Refreshing credits...');
+      triggerRefresh();
+    }
+  }, [searchParams, triggerRefresh]);
+
 
   useEffect(() => {
     if (user?.primaryEmailAddress?.emailAddress) {
