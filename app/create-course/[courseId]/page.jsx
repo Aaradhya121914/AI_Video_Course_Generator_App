@@ -302,6 +302,21 @@ const CourseLayout = ({ params }) => {
       console.warn("No chapters found to generate content for.");
       return;
     }
+  
+    // Subtract credits now!
+    if (user?.primaryEmailAddress?.emailAddress) {
+    await fetch('/api/update-user-credits', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: user.primaryEmailAddress.emailAddress,
+        creditsToSubtract: 20
+      }),
+    });
+    // Refresh credits to update header immediately
+    triggerRefresh();
+  }
+
 
     if (!hasVideoIncluded(course)) {
       const cachedChapters = chapterVideoCache[course.courseId] || [];
@@ -477,19 +492,6 @@ Chapter duration: ${chapterDuration}`;
           [course.courseId]: sortedUpdatedChapters,
         }));
 
-        // Subtract credits now!
-        if (user?.primaryEmailAddress?.emailAddress) {
-          await fetch('/api/update-user-credits', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              email: user.primaryEmailAddress.emailAddress,
-              creditsToSubtract: 20
-            }),
-          });
-          // Refresh credits to update header
-          triggerRefresh();
-        }
 
         console.log("Chapter Videos (No Video, All Null):", updatedChapters);
       } catch (error) {
@@ -696,19 +698,7 @@ Chapter duration: ${chapterDuration}`;
         [course.courseId]: chapterContent,
       }));
 
-            // Subtract credits now!
-      if (user?.primaryEmailAddress?.emailAddress) {
-        await fetch('/api/update-user-credits', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email: user.primaryEmailAddress.emailAddress,
-            creditsToSubtract: 20
-          }),
-        });
-        // Refresh credits to update header
-        triggerRefresh();
-      }
+      
     } catch (error) {
       console.error("Failed to generate chapter content or video URLs:", error);
     } finally {

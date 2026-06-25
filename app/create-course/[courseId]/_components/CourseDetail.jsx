@@ -200,10 +200,10 @@ const CourseDetail = ({
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowLowCreditsDialog(false)}>
+            <Button variant="outline" onClick={() => setShowLowCreditsDialog(false)} className="cursor-pointer hover:bg-gray-100 hover:text-gray-800">
               Cancel
             </Button>
-            <Button onClick={() => setShowLowCreditsDialog(false)}>
+            <Button onClick={() => setShowLowCreditsDialog(false)} className="cursor-pointer bg-primary text-white hover:bg-purple-800 hover:text-white">
               Ok
             </Button>
           </DialogFooter>
