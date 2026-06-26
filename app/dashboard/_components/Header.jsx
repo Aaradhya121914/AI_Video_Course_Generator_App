@@ -11,7 +11,7 @@ const Header = ({ isMobileSidebarOpen, setIsMobileSidebarOpen }) => {
   const { currentCredits } = useCredits(); 
 
   return (
-    <div className="flex justify-between items-center p-5 shadow-sm relative">
+    <div className="flex justify-between items-center p-5 shadow-sm relative bg-white/80 backdrop-blur-sm">
       {/* Mobile Menu Button */}
       <button
         className="md:hidden text-2xl cursor-pointer"
