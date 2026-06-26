@@ -1,3 +1,4 @@
+
 "use client";
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
@@ -17,7 +18,7 @@ export default function HeroSection() {
 
   return (
     <section className="min-h-screen w-full relative overflow-hidden bg-white md:bg-transparent">
-      {/* Dashboard Background Image (only on desktop) */}
+      {/* Dashboard Background Image (ONLY ON DESKTOP) */}
       <div className="absolute inset-0 hidden md:block">
         <Image
           src="/Dashboard_Background_Img.jpeg"
@@ -27,13 +28,12 @@ export default function HeroSection() {
           priority
           unoptimized
         />
-        {/* Optional: Very light overlay for readability on desktop */}
-        <div className="absolute inset-0 bg-white/20" />
+        
       </div>
 
       {/* Content Container */}
       <div className="relative z-10 mx-auto w-full max-w-7xl px-4 py-16 sm:px-6 sm:py-24 md:grid md:grid-cols-2 md:items-center md:gap-8 lg:px-8 lg:py-32">
-        {/* Text Content */}
+        {/* Text Content (SHOWN ON BOTH MOBILE & DESKTOP) */}
         <div className="max-w-prose text-left">
           <h1 className="text-4xl font-extrabold text-gray-900 sm:text-5xl sm:block">
             <strong className="text-purple-700 block mb-2"> AI Course Generator </strong>
@@ -56,14 +56,14 @@ export default function HeroSection() {
           </div>
         </div>
 
-        {/* Hero Image (visible on both mobile and desktop) */}
-        <div className="flex justify-center mt-12 md:mt-0">
+        {/* Hero Image (ONLY ON MOBILE - HIDDEN ON DESKTOP) */}
+        <div className="flex justify-center mt-12 md:mt-0 md:hidden">
           <Image
             src="/hero_ai_course.png"
             alt="AI Course Generator Dashboard"
             width={600}
             height={600}
-            className="rounded-xl shadow-2xl mx-auto w-full max-w-md md:max-w-none"
+            className="rounded-xl shadow-2xl mx-auto w-full max-w-md"
             priority
           />
         </div>
