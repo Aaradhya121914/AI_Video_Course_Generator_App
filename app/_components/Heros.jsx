@@ -16,9 +16,9 @@ export default function HeroSection() {
   }, [isLoaded, isSignedIn, router]);
 
   return (
-    <section className="min-h-screen w-full relative overflow-hidden">
-      {/* Dashboard Background Image */}
-      <div className="absolute inset-0">
+    <section className="min-h-screen w-full relative overflow-hidden bg-white md:bg-transparent">
+      {/* Dashboard Background Image (only on desktop) */}
+      <div className="absolute inset-0 hidden md:block">
         <Image
           src="/Dashboard_Background_Img.jpeg"
           alt="Dashboard Background"
@@ -27,18 +27,20 @@ export default function HeroSection() {
           priority
           unoptimized
         />
+        {/* Optional: Very light overlay for readability on desktop */}
+        <div className="absolute inset-0 bg-white/20" />
       </div>
 
       {/* Content Container */}
       <div className="relative z-10 mx-auto w-full max-w-7xl px-4 py-16 sm:px-6 sm:py-24 md:grid md:grid-cols-2 md:items-center md:gap-8 lg:px-8 lg:py-32">
         {/* Text Content */}
         <div className="max-w-prose text-left">
-          <h1 className="text-4xl font-extrabold text-gray-900 sm:text-5xl sm:block drop-shadow-md">
+          <h1 className="text-4xl font-extrabold text-gray-900 sm:text-5xl sm:block">
             <strong className="text-purple-700 block mb-2"> AI Course Generator </strong>
             Custom Learning Paths, Powered by AI
           </h1>
 
-          <p className="mt-4 text-base text-gray-800 sm:text-lg/relaxed drop-shadow-sm">
+          <p className="mt-4 text-base text-gray-800 sm:text-lg/relaxed">
             Creating engaging video courses has never been easier. Generate
             high-quality video content tailored to your needs with our
             intuitive AI Course Generator.
@@ -54,7 +56,17 @@ export default function HeroSection() {
           </div>
         </div>
 
-        
+        {/* Hero Image (visible on both mobile and desktop) */}
+        <div className="flex justify-center mt-12 md:mt-0">
+          <Image
+            src="/hero_ai_course.png"
+            alt="AI Course Generator Dashboard"
+            width={600}
+            height={600}
+            className="rounded-xl shadow-2xl mx-auto w-full max-w-md md:max-w-none"
+            priority
+          />
+        </div>
       </div>
     </section>
   );

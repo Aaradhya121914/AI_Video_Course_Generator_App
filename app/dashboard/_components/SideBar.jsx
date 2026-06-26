@@ -99,3 +99,4 @@ const SideBar = ({ setIsMobileSidebarOpen }) => {
 };
 
 export default SideBar;
+

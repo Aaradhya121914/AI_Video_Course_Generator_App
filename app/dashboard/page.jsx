@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect, Suspense } from 'react'; // Add Suspense import
+import React, { useState, useEffect, Suspense } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useUser } from '@clerk/nextjs';
@@ -54,9 +54,9 @@ const DashboardContent = () => {
 
   if (courses.length === 0) {
     return (
-      <div>
+      <div className="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
         <Addcourse />
-        <div className="flex flex-col items-center justify-center min-h-[50vh] gap-4 mt-8">
+        <div className="flex flex-col items-center justify-center min-h-[30vh] gap-4 mt-8">
           <p className="text-lg text-gray-500">No courses on dashboard yet!</p>
         </div>
       </div>
@@ -64,16 +64,11 @@ const DashboardContent = () => {
   }
 
   return (
-    <div>
+    <div className="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
       <Addcourse />
-      <h1 className="text-2xl font-bold mb-8 mt-8">My Dashboard</h1>
+      <h1 className="text-2xl font-bold mb-8">My Dashboard</h1>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {courses.map((course) => {
-          console.log("course object keys:", Object.keys(course));
-          console.log("course.courseOutput keys:", Object.keys(course.courseOutput || {}));
-          if (course?.courseOutput?.course) {
-            console.log("course.courseOutput.course keys:", Object.keys(course.courseOutput.course));
-          }
           const courseName = course?.courseOutput?.course?.name || course?.courseOutput?.course_name || 'Untitled Course';
           const courseCategory = course?.category || 'Course';
           const courseDuration = 
